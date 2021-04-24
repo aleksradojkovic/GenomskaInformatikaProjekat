@@ -81,20 +81,34 @@ class Heuristic1:
         else:
             return -1
     
+        #s (i) u ovom kontekstu dokle smo stigli u tekstu, indeks kursora na tekst (odkale poceti search za oviu iteraciju)
+        #ova funkcija vraca pomjeraj za heuristiku 1. Kad  je chars_to_skip jednak jedinici, ova heuristika postaje bad character rule
+    def GetNextShift(self, i, text, pattern, chars_to_skip, table, foundList):
+        current_text_index = i
+        j = len(pattern) - 1
+        while(j>=0 and pattern[j] == text[i+j]):
+            j=j-1
+        if(j<0):
+            #yield i
+            foundList.append(i)
+            return 1
+            #i = i + 1
+        else:
+            current_text_index = current_text_index + len(pattern) - j
+            #i = i + max(self.check_first_n_characters(pattern, text, chars_to_skip, current_text_index), j-self.get_last_occurence(text[i+j],table))
+            return max(self.check_first_n_characters(pattern, text, chars_to_skip, current_text_index), j-self.get_last_occurence(text[i+j],table))
+
     def search(self, text, pattern, chars_to_skip):
-        i = 0
-        current_text_index = 0
         table = preprocess_bad_character(pattern)
+        i = 0
+        total_shift_amount = 0
+        foundList = []
         while(i<=len(text) - len(pattern)):
-            j = len(pattern) - 1
-            while(j>=0 and pattern[j] == text[i+j]):
-                j=j-1
-            if(j<0):
-                yield i
-                i = i + 1
-            else:
-                current_text_index = current_text_index + len(pattern) - j
-                i = i + max(self.check_first_n_characters(pattern, text, chars_to_skip, current_text_index), j-self.get_last_occurence(text[i+j],table))
+            shift = self.GetNextShift(i, text, pattern, chars_to_skip, table, foundList)
+            total_shift_amount += shift
+            i += shift
+        print("total skipped alignments by heuristic 1 with n = " + str(chars_to_skip) +" is: " + str(total_shift_amount))
+        return foundList
 
 class Heuristic2:
   
@@ -213,9 +227,9 @@ class BoyesMooreAlgorithm:
             print("Heuristic '" + heuristic + "' is not implemented!")
 
 bm = BoyesMooreAlgorithm()
-bm.search("Heuristic1",                             "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)
+bm.search("Heuristic1",                             "CTATCGAAGTAGCCGATTAGC",        "CGA",      2)
 bm.search("Heuristic2",                             "SFGATFGACGAAACGAGTAGCSFGATAGACGA",        "SFGATAGACGA",      1)
 bm.search("Heuristic1and2",                         "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)
 bm.search("BadCharacterAndGoodSuffixRuleHeuristic", "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)
-bm.search("NoHeuristic",                            "SFGATFGACGAAACGAGTAGCSFGATAGACGA",        "SFGATAGACGA",      1)
+bm.search("NoHeuristic",                            "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)
 bm.search("dummy",                                  "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)

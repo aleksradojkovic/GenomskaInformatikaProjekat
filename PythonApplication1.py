@@ -83,7 +83,7 @@ class Heuristic1:
     
         #s (i) u ovom kontekstu dokle smo stigli u tekstu, indeks kursora na tekst (odkale poceti search za oviu iteraciju)
         #ova funkcija vraca pomjeraj za heuristiku 1. Kad  je chars_to_skip jednak jedinici, ova heuristika postaje bad character rule
-    def GetNextShift(self, i, text, pattern, chars_to_skip, table, foundList):
+    def getNextShift(self, i, text, pattern, chars_to_skip, table, foundList):
         current_text_index = i
         j = len(pattern) - 1
         while(j>=0 and pattern[j] == text[i+j]):
@@ -104,7 +104,7 @@ class Heuristic1:
         skipped_alignments = 0
         foundList = []
         while(i<=len(text) - len(pattern)):
-            shift = self.GetNextShift(i, text, pattern, chars_to_skip, table, foundList)
+            shift = self.getNextShift(i, text, pattern, chars_to_skip, table, foundList)
             #preimenovati u broj iteracija. Posto je kod naivnog algoritma broj iteracija jednak duzini teksta, broj preskocenih poredjenja je jednak razlici broja iteracija
             #naivnog algoritma i broja iteracija heuristike
             skipped_alignments += 1
@@ -205,16 +205,55 @@ class Heuristic2:
 
 
 class Heuristic1and2:
+    '''Search for a pattern in given text using 
+    Boyer Moore algorithm with Good suffix rule '''
+
     def search(self, text, pattern, n):
         print("Not implemented")
         return
         yield
 
 class BadCharacterAndGoodSuffixRuleHeuristic:
-    def search(self, text, pattern, n):
-        print ("Not implemented")
-        return
-        yield
+    def getNextShiftGoodSuffix(self, s, text, pat, shift, bpos, foundList):
+  
+        j = len(pat) - 1
+          
+        ''' Keep reducing index j of pattern while characters of 
+            pattern and text are matching at this shift s'''
+        while j >= 0 and pat[j] == text[s + j]:
+            j -= 1
+              
+        ''' If the pattern is present at the current shift, 
+            then index j will become -1 after the above loop '''
+        if j < 0:
+            foundList.append(s)
+            return shift[0]
+        else:
+            '''pat[i] != pat[s+j] so shift the pattern 
+            shift[j+1] times '''
+            return shift[j+1]
+
+    def search(self, text, pat, n):
+        # s is shift of the pattern with respect to text
+        s = 0
+        m = len(pat)
+        n = len(text)
+
+        # do preprocessing
+        shift, bpos = preprocess_strong_suffix(pat, m)
+        shift = preprocess_case2(shift, bpos, pat, m)
+        bad_char = Heuristic1()
+        bad_char_table = preprocess_bad_character(pat)
+        skipped_alignments = 0
+        foundListSuffix = []
+        foundListCharacter = []
+        while s <= len(text) - len(pat):
+            shift_amount = max(self.getNextShiftGoodSuffix(s, text, pat, shift, bpos, foundListSuffix), bad_char.getNextShift(s, text, pat, 1, bad_char_table, foundListCharacter))
+            skipped_alignments += 1
+            s += shift_amount
+        skipped_alignments = len(text) - skipped_alignments
+        print("total skipped alignments by heuristic 2 = " + str(skipped_alignments))
+        return foundListSuffix
 
 class NoHeuristic:
     def search(self, text, pattern, n):
@@ -242,6 +281,6 @@ bm = BoyesMooreAlgorithm()
 bm.search("Heuristic1",                             "CTATCGAAGTAGCCGATTAGC",        "CGA",      2)
 bm.search("Heuristic2",                             "SFGATFGACGAAACGAGTAGCSFGATAGACGA",        "SFGATAGACGA",      1)
 bm.search("Heuristic1and2",                         "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)
-bm.search("BadCharacterAndGoodSuffixRuleHeuristic", "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)
+bm.search("BadCharacterAndGoodSuffixRuleHeuristic", "SFGATFGACGAAACGAGTAGCSFGATAGACGA",        "SFGATAGACGA",      1)
 bm.search("NoHeuristic",                            "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)
 bm.search("dummy",                                  "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)

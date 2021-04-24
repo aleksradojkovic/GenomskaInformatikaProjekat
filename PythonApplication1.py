@@ -110,7 +110,7 @@ class Heuristic1:
             skipped_alignments += 1
             i += shift
         skipped_alignments = len(text) - skipped_alignments
-        print("total skipped alignments by heuristic 1 with n = " + str(chars_to_skip) +" is: " + str(skipped_alignments))
+        print("Total skipped alignments by heuristic 1 with n = " + str(chars_to_skip) +" is: " + str(skipped_alignments))
         return foundList
 
 class Heuristic2:
@@ -139,13 +139,11 @@ class Heuristic2:
             foundHashLookup = False
             if pat[bpos[j]:]:
                 listOfPrevChr = charBeforeBorderLookup[pat[bpos[j]:]]
-                print(listOfPrevChr)
                 for item in listOfPrevChr:
                     foundHashLookup = True
                     #uslov da je index manji od jot je VRLO BITAN. Zato sto bez tog uslova bi u patternu sa ponavljajucim sufixima, mogli da dobijemo negativan pomjeraj
                     #ako se pattern ne poklopi na slovu koje je lijevo od jednog od ponavljajucih suffixa
                     if (item['previousChar'] == text[s+j-1]) and (item['index'] < j):
-                        print('Desio ses')
                         return j - item['index']
                         foundCharMatch = True
                         break
@@ -160,8 +158,6 @@ class Heuristic2:
         # s is shift of the pattern with respect to text
         s = 0
         m = len(pat)
-        n = len(text)
-
         # do preprocessing
         shift, bpos = preprocess_strong_suffix(pat, m)
         shift = preprocess_case2(shift, bpos, pat, m)
@@ -178,7 +174,6 @@ class Heuristic2:
             if pat[bpos[i]:]:
                 charBeforeBorderLookup[pat[bpos[i]:]].append({'previousChar':pat[i-1], 'index':i-1})
             i+=1
-        print(bpos)
         #ako hocemo da imamo prethodno slovo od poslednjeg u nizu ponavljajucih suffixa, mada je nepotrebno, posto ako na njima padne svakako postoji sledeci
         #a ako njih prodje, nema potrebe da ih vise razmatramo u okviru iste iteracije
         #bposset = set(bpos)
@@ -192,7 +187,6 @@ class Heuristic2:
         
         for key in charBeforeBorderLookup:
             charBeforeBorderLookup[key].reverse()
-        print(charBeforeBorderLookup)
         skipped_alignments = 0
         foundList = []
         while s <= len(text) - len(pat):
@@ -200,7 +194,7 @@ class Heuristic2:
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
-        print("total skipped alignments by heuristic 2 = " + str(skipped_alignments))
+        print("Total skipped alignments by heuristic 2 = " + str(skipped_alignments))
         return foundList
 
 
@@ -208,10 +202,37 @@ class Heuristic1and2:
     '''Search for a pattern in given text using 
     Boyer Moore algorithm with Good suffix rule '''
 
-    def search(self, text, pattern, n):
-        print("Not implemented")
-        return
-        yield
+    def search(self, text, pat, n):
+        # s is shift of the pattern with respect to text
+        s = 0
+        m = len(pat)
+        # do preprocessing for heuristic 1
+        bad_char_table = preprocess_bad_character(pat)
+        # end preprocessing for heuristic 1
+        # do preprocessing for heuristic 2
+        shift, bpos = preprocess_strong_suffix(pat, m)
+        shift = preprocess_case2(shift, bpos, pat, m)
+        charBeforeBorderLookup = defaultdict(list)
+        i = 1
+        while i < len(bpos)-1:
+            if pat[bpos[i]:]:
+                charBeforeBorderLookup[pat[bpos[i]:]].append({'previousChar':pat[i-1], 'index':i-1})
+            i+=1 
+        for key in charBeforeBorderLookup:
+            charBeforeBorderLookup[key].reverse()
+        #finished preprocessing for heuristic 2
+        heuristic1 = Heuristic1()
+        heuristic2 = Heuristic2()
+        skipped_alignments = 0
+        foundListSuffix = []
+        foundListCharacter = []
+        while s <= len(text) - len(pat):
+            shift_amount = max(heuristic2.getNextShift(s, text, pat, shift, bpos, charBeforeBorderLookup, foundListSuffix), heuristic1.getNextShift(s, text, pat, n, bad_char_table, foundListCharacter))
+            skipped_alignments += 1
+            s += shift_amount
+        skipped_alignments = len(text) - skipped_alignments
+        print("Total skipped alignments by heuristic 1 and 2 with n = " + str(n) +" is: " + str(skipped_alignments))
+        return foundListSuffix
 
 class BadCharacterAndGoodSuffixRuleHeuristic:
     def getNextShiftGoodSuffix(self, s, text, pat, shift, bpos, foundList):
@@ -252,7 +273,7 @@ class BadCharacterAndGoodSuffixRuleHeuristic:
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
-        print("total skipped alignments by heuristic 2 = " + str(skipped_alignments))
+        print("Total skipped alignments by Boyer Moore full algorithm = " + str(skipped_alignments))
         return foundListSuffix
 
 class NoHeuristic:
@@ -278,9 +299,9 @@ class BoyesMooreAlgorithm:
             print("Heuristic '" + heuristic + "' is not implemented!")
 
 bm = BoyesMooreAlgorithm()
-bm.search("Heuristic1",                             "CTATCGAAGTAGCCGATTAGC",        "CGA",      2)
-bm.search("Heuristic2",                             "SFGATFGACGAAACGAGTAGCSFGATAGACGA",        "SFGATAGACGA",      1)
-bm.search("Heuristic1and2",                         "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)
+bm.search("Heuristic1",                             "AAAAAAAAAAAAAAAA",        "A",      2)
+bm.search("Heuristic2",                             "AAAAAAAAAAAAAAAA",        "A",      1)
+bm.search("Heuristic1and2",                         "SFGATFGACGAAACGAGTAGCSFGATAGACGA",        "SFGATAGACGA",      2)
 bm.search("BadCharacterAndGoodSuffixRuleHeuristic", "SFGATFGACGAAACGAGTAGCSFGATAGACGA",        "SFGATAGACGA",      1)
 bm.search("NoHeuristic",                            "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)
 bm.search("dummy",                                  "CTATCGAAGTAGCCGATTAGC",        "CGA",      1)

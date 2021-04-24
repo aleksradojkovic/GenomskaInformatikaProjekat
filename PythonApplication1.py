@@ -101,26 +101,67 @@ class Heuristic1:
     def search(self, text, pattern, chars_to_skip):
         table = preprocess_bad_character(pattern)
         i = 0
-        total_shift_amount = 0
+        skipped_alignments = 0
         foundList = []
         while(i<=len(text) - len(pattern)):
             shift = self.GetNextShift(i, text, pattern, chars_to_skip, table, foundList)
-            total_shift_amount += shift
+            #preimenovati u broj iteracija. Posto je kod naivnog algoritma broj iteracija jednak duzini teksta, broj preskocenih poredjenja je jednak razlici broja iteracija
+            #naivnog algoritma i broja iteracija heuristike
+            skipped_alignments += 1
             i += shift
-        print("total skipped alignments by heuristic 1 with n = " + str(chars_to_skip) +" is: " + str(total_shift_amount))
+        skipped_alignments = len(text) - skipped_alignments
+        print("total skipped alignments by heuristic 1 with n = " + str(chars_to_skip) +" is: " + str(skipped_alignments))
         return foundList
 
 class Heuristic2:
   
     '''Search for a pattern in given text using 
     Boyer Moore algorithm with Good suffix rule '''
-    def search(self, text, pat, n):
+    def getNextShift(self, s, text, pat, shift, bpos, charBeforeBorderLookup, foundList):
   
+        j = len(pat) - 1
+          
+        ''' Keep reducing index j of pattern while characters of 
+            pattern and text are matching at this shift s'''
+        while j >= 0 and pat[j] == text[s + j]:
+            j -= 1
+              
+        ''' If the pattern is present at the current shift, 
+            then index j will become -1 after the above loop '''
+        if j < 0:
+            foundList.append(s)
+            return shift[0]
+        else:
+            '''pat[i] != pat[s+j] so shift the pattern 
+            shift[j+1] times '''
+                
+            foundCharMatch = False
+            foundHashLookup = False
+            if pat[bpos[j]:]:
+                listOfPrevChr = charBeforeBorderLookup[pat[bpos[j]:]]
+                print(listOfPrevChr)
+                for item in listOfPrevChr:
+                    foundHashLookup = True
+                    #uslov da je index manji od jot je VRLO BITAN. Zato sto bez tog uslova bi u patternu sa ponavljajucim sufixima, mogli da dobijemo negativan pomjeraj
+                    #ako se pattern ne poklopi na slovu koje je lijevo od jednog od ponavljajucih suffixa
+                    if (item['previousChar'] == text[s+j-1]) and (item['index'] < j):
+                        print('Desio ses')
+                        return j - item['index']
+                        foundCharMatch = True
+                        break
+
+            if not foundHashLookup:
+               return shift[j + 1]
+            else:
+                if not foundCharMatch:
+                   return len(pat)
+
+    def search(self, text, pat, n):
         # s is shift of the pattern with respect to text
         s = 0
         m = len(pat)
         n = len(text)
-  
+
         # do preprocessing
         shift, bpos = preprocess_strong_suffix(pat, m)
         shift = preprocess_case2(shift, bpos, pat, m)
@@ -134,9 +175,9 @@ class Heuristic2:
 
         i = 1
         while i < len(bpos)-1:
-           if pat[bpos[i]:]:
-               charBeforeBorderLookup[pat[bpos[i]:]].append({'previousChar':pat[i-1], 'index':i-1})
-           i+=1
+            if pat[bpos[i]:]:
+                charBeforeBorderLookup[pat[bpos[i]:]].append({'previousChar':pat[i-1], 'index':i-1})
+            i+=1
         print(bpos)
         #ako hocemo da imamo prethodno slovo od poslednjeg u nizu ponavljajucih suffixa, mada je nepotrebno, posto ako na njima padne svakako postoji sledeci
         #a ako njih prodje, nema potrebe da ih vise razmatramo u okviru iste iteracije
@@ -151,46 +192,17 @@ class Heuristic2:
         
         for key in charBeforeBorderLookup:
             charBeforeBorderLookup[key].reverse()
-
         print(charBeforeBorderLookup)
-        # sve dok se patern moze alignovati sa textom
+        skipped_alignments = 0
+        foundList = []
         while s <= len(text) - len(pat):
-            j = len(pat) - 1
-          
-            ''' Keep reducing index j of pattern while characters of 
-                pattern and text are matching at this shift s'''
-            while j >= 0 and pat[j] == text[s + j]:
-                j -= 1
-              
-            ''' If the pattern is present at the current shift, 
-                then index j will become -1 after the above loop '''
-            if j < 0:
-                yield s
-                s += shift[0]
-            else:
-                '''pat[i] != pat[s+j] so shift the pattern 
-                shift[j+1] times '''
-                
-                foundCharMatch = False
-                foundHashLookup = False
-                if pat[bpos[j]:]:
-                    listOfPrevChr = charBeforeBorderLookup[pat[bpos[j]:]]
-                    print(listOfPrevChr)
-                    for item in listOfPrevChr:
-                        foundHashLookup = True
-                        #uslov da je index manji od jot je VRLO BITAN. Zato sto bez tog uslova bi u patternu sa ponavljajucim sufixima, mogli da dobijemo negativan pomjeraj
-                        #ako se pattern ne poklopi na slovu koje je lijevo od jednog od ponavljajucih suffixa
-                        if (item['previousChar'] == text[s+j-1]) and (item['index'] < j):
-                            print('Desio ses')
-                            s += j - item['index']
-                            foundCharMatch = True
-                            break
+            shift_amount = self.getNextShift(s, text, pat, shift, bpos, charBeforeBorderLookup, foundList)
+            skipped_alignments += 1
+            s += shift_amount
+        skipped_alignments = len(text) - skipped_alignments
+        print("total skipped alignments by heuristic 2 = " + str(skipped_alignments))
+        return foundList
 
-                if not foundHashLookup:
-                    s += shift[j + 1]
-                else:
-                    if not foundCharMatch:
-                        s += m
 
 class Heuristic1and2:
     def search(self, text, pattern, n):

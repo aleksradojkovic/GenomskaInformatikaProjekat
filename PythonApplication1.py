@@ -3,6 +3,8 @@ import time
 import re
 from collections import defaultdict
 
+listOfSkippedAlignments = []
+
 def preprocess_bad_character(pattern):
     bad_char_table = {}
     for i, c in  enumerate(pattern):
@@ -111,6 +113,7 @@ class Heuristic1:
             skipped_alignments += 1
             i += shift
         skipped_alignments = len(text) - skipped_alignments
+        listOfSkippedAlignments.append(skipped_alignments)
         print("     Total skipped alignments by heuristic 1 with n = " + str(chars_to_skip) +" is: " + str(skipped_alignments))
         return foundList
 
@@ -195,6 +198,7 @@ class Heuristic2:
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
+        listOfSkippedAlignments.append(skipped_alignments)
         print("     Total skipped alignments by heuristic 2 = " + str(skipped_alignments))
         return foundList
 
@@ -232,6 +236,7 @@ class Heuristic1and2:
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
+        listOfSkippedAlignments.append(skipped_alignments)
         print("     Total skipped alignments by heuristic 1 and 2 with n = " + str(n) +" is: " + str(skipped_alignments))
         return foundListSuffix
 
@@ -274,6 +279,7 @@ class BadCharacterAndGoodSuffixRuleHeuristic:
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
+        listOfSkippedAlignments.append(skipped_alignments)
         print("     Total skipped alignments by Boyer Moore full algorithm = " + str(skipped_alignments))
         return foundListSuffix
 
@@ -301,6 +307,7 @@ class BoyesMooreAlgorithm:
 
 
 def searchPattern(text, pattern, skip_param_heuristic1):
+    listOfSkippedAlignments.clear()
     print("Searching text: \"" + text + "\" for pattern: \"" + pattern + "\"")
     bm = BoyesMooreAlgorithm()
     bm.search("Heuristic1", text, pattern, skip_param_heuristic1)
@@ -308,15 +315,11 @@ def searchPattern(text, pattern, skip_param_heuristic1):
     bm.search("Heuristic1and2", text, pattern, skip_param_heuristic1)
     bm.search("BadCharacterAndGoodSuffixRuleHeuristic",  text, pattern, 1)
     #TO DO: Add assertion of lists with pattern found indices
-    
+    heuristicNames = ["Heuristic1", "Heuristic2", "Heuristic 1 and 2 combined", "BadCharacterAndGoodSuffixRuleHeuristic"]
+    plt.plot(heuristicNames, listOfSkippedAlignments)
+    plt.show()
 
 searchPattern( "AAAAAAAAAAAAAAAA", "A", 2)
 searchPattern( "SFGATFGACGAAACGAGTAGCSFGATAGACGA", "SFGATAGACGA", 2)
 searchPattern( "CTATCGAAGTAGCCGATTAGC", "CGA", 2)
-
-x = [1,2,3]
-y = [2,4,5]
-
-plt.plot(x,y)
-plt.show()
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

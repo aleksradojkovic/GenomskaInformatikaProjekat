@@ -431,12 +431,12 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
         listOfSkippedAlignments["Boyer Moore"].clear()
     plot_counter = (plot_counter + 1)%3
 
-UserTests.PerformTests()
+#UserTests.PerformTests()
 
 
 listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
 #for seq in getSequencesFromFile(r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_003713225.1_Cara_1.0_genomic.fna.gz"):
 #   currentRecord += 1
-#   searchPattern(seq, "ATGCATG", currentRecord == numOfRecordsLen)
+#   searchPattern(seq, "ATGCATG", currentRecord, listOfSkippedAlignments, currentRecord == numOfRecordsLen)
 print(tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True))
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

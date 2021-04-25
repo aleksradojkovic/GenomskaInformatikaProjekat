@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import gzip
 import re
 import time
+import numpy as np
 
 def preprocessingForHeuristic2(bpos,pattern):
     charBeforeBorderLookup = defaultdict(list)
@@ -333,7 +334,7 @@ class BadCharacterAndGoodSuffixRuleHeuristic:
 
 class NoHeuristic:
     def search(self, text, pattern):
-        return [a.start() for a in list(re.finditer(pattern, text))]
+        return [a.start() for a in list(re.finditer("(?=" + pattern + ")", text))]
     
 class BoyesMooreAlgorithm:
     Heuristics = {"Heuristic1":Heuristic1(),
@@ -367,39 +368,37 @@ def searchPattern(text, pattern):
     #TO DO: Add assertion of lists with pattern found indices
     pattern_names_label.append(pattern)
 
-#searchPattern( "AAAAAAAAAAAAAAAA", "A")
-#searchPattern( "SFGATFGACGAAACGAGTAGCSFGATAGACGA", "AA")
-#searchPattern( "CTCTCGAAGTAGCCGATTAGCCTATCG", "CTATCG")
+searchPattern( "AAAAAAAAAAAAAAAA", "A")
+searchPattern( "SFGATFGACGAAACGAGTAGCSFGATAGACGA", "AA")
+searchPattern( "CTCTCGAAGTAGCCGATTAGCCTATCG", "CTATCG")
 
 def showCharts():
-    x = np.arange(len(pattern_names_label))  # the label locations
-    width = 0.8  # the width of the bars
+    barWidth = 0.15
+    r1 = np.arange(len(listOfSkippedAlignments["Heuristic1"]))
+    r2 = [x + barWidth for x in r1]
+    r3 = [x + barWidth for x in r2]
+    r4 = [x + barWidth for x in r3]
 
-    fig, ax = plt.subplots()
-    rects1 = ax.bar(x - 2*width/4, listOfSkippedAlignments["Heuristic1"], width, label='Heuristic1')
-    rects2 = ax.bar(x - width/4, listOfSkippedAlignments["Heuristic2"], width, label='Heuristic2')
-    rects3 = ax.bar(x + width/4, listOfSkippedAlignments["Heuristic 1 and 2"], width, label='Heuristic 1 and 2')
-    rects4 = ax.bar(x + 2*width/4, listOfSkippedAlignments["Boyer Moore"], width, label='Boyer Moore')
+    plt.bar(r1, listOfSkippedAlignments["Heuristic1"], color = "red", width = barWidth, edgecolor = 'white', label = "Heuristic1")
+    plt.bar(r2, listOfSkippedAlignments["Heuristic2"], color = "green", width = barWidth, edgecolor = 'white', label = "Heuristic2")
+    plt.bar(r3, listOfSkippedAlignments["Heuristic 1 and 2"], color = "blue", width = barWidth, edgecolor = 'white', label = "Heuristic 1 and 2")
+    plt.bar(r4, listOfSkippedAlignments["Boyer Moore"], color = "yellow", width = barWidth, edgecolor = 'white', label = "Boyer Moore")
 
-    # Add some text for labels, title and custom x-axis tick labels, etc.
-    ax.set_ylabel('Skipped alignments')
-    ax.set_title('Skipped alignments by heuristic and pattern')
-    ax.set_xticks(x)
-    ax.set_xticklabels(pattern_names_label)
-    ax.legend()
+    plt.xlabel('group', fontweight='bold')
+    plt.xticks([r + barWidth for r in range(len(listOfSkippedAlignments["Heuristic1"]))], ['A','B', 'C'])
+    plt.set_title ("title")
 
-    ax.bar_label(rects1, padding=3)
-    ax.bar_label(rects2, padding=3)
-    ax.bar_label(rects3, padding=3)
-    ax.bar_label(rects4, padding=3)
+    for i, v in enumerate(y):
+        plt.text(xlocs[i] - 0.25, v + 0.01, str(v))
 
-    fig.tight_layout()
+    plt.legend()
     plt.show()
-
-#showCharts()
 
 #UserTests.PerformTests()
 
-for seq in GetSequencesFromFile(r"C:\Users\Aleksandar\GCA_003713225.1_Cara_1.0_genomic.fna.gz"):
-   searchPattern(seq, "ATGCATG")
+showCharts()
+
+
+#for seq in GetSequencesFromFile(r"GCA_003713225.1_Cara_1.0_genomic.fna.gz"):
+#   searchPattern(seq, "ATGCATG")
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

@@ -6,9 +6,8 @@ import gzip
 import re
 import time
 import numpy as np
-from PyPDF2 import PdfFileReader, PdfFileWriter
+from matplotlib.backends.backend_pdf import PdfPages
 
-output = PdfFileWriter()
 numOfCharts = 1;
 pattern_names_label = []
 plot_counter = 0
@@ -400,9 +399,8 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
     global output
 
     if plot_counter == 2 or forcePlot:
-        plt.clf()
-        plt.close()
-       
+        #plt.clf()
+        #plt.close()
         x = np.arange(len(pattern_names_label))  # the label locations
         width = 0.2  # the width of the bars
 
@@ -426,9 +424,11 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
         ax.bar_label(rects4, padding=3)
 
         fig.tight_layout()
-        plt.show()
-        pdf_save = plt.figure()
-        output.addPage(pdf_save)
+        #plt.show()
+        
+        pdf.savefig(fig)
+
+
         populate_table_entries(listOfSkippedAlignments, pattern_names_label)
         pattern_names_label.clear()
         listOfSkippedAlignments["Heuristic1"].clear()
@@ -437,7 +437,8 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
         listOfSkippedAlignments["Boyer Moore"].clear()
     plot_counter = (plot_counter + 1)%3
 
-UserTests.PerformTests()
+with PdfPages('plots.pdf') as pdf:
+    UserTests.PerformTests()
 
 #for file in listOfFiles:
 #    listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
@@ -449,7 +450,4 @@ UserTests.PerformTests()
 #           searchPattern(seq, pattern, currentRecord, listOfSkippedAlignments, currentRecord == numOfRecordsLen)
 #    print(tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True))
 
-outputStream = open(r"output.pdf", "wb")
-output.write(outputStream)
-outputStream.close()
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

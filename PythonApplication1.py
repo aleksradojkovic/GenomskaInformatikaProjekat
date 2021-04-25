@@ -346,6 +346,5 @@ ax.bar_label(rects3, padding=3)
 ax.bar_label(rects4, padding=3)
 
 fig.tight_layout()
-plt.plot(heuristicNames, listOfSkippedAlignments)
 plt.show()
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

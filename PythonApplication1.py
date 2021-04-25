@@ -12,6 +12,8 @@ plot_counter = 0
 numOfRecordsLen = 0
 currentRecord = 0
 table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
+listOfFiles = [r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_003713225.1_Cara_1.0_genomic.fna.gz", r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_003957725.1_ASM395772v1_genomic.fna.gz", r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_900095145.2_PAHARI_EIJ_v1.1_genomic.fna.gz" ]
+listOfPatterns = [["ATGCATG", "TCTCTCTA", "TTCACTACTCTCA"], ["ATGATG", "CTCTCTA", "TCACTACTCTCA"], ["ACGATG", "CTCGACTA", "TCACTACTAATTCG"]]
 
 def populate_table_entries(listOfSkippedAlignments, pattern_names_label):
     global table_entries
@@ -433,10 +435,13 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
 
 #UserTests.PerformTests()
 
-
-listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
-#for seq in getSequencesFromFile(r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_003713225.1_Cara_1.0_genomic.fna.gz"):
-#   currentRecord += 1
-#   searchPattern(seq, "ATGCATG", currentRecord, listOfSkippedAlignments, currentRecord == numOfRecordsLen)
-print(tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True))
+for file in listOfFiles:
+    listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
+    currentRecord = 0
+    table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
+    for seq in getSequencesFromFile(file):
+       currentRecord += 1
+       for pattern in listOfPatterns:
+           searchPattern(seq, pattern, currentRecord, listOfSkippedAlignments, currentRecord == numOfRecordsLen)
+    print(tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True))
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

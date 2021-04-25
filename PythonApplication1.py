@@ -101,10 +101,10 @@ def preprocess_case2(shift, bpos, pat, m):
     return shift;
 
 class Heuristic1:
-    def check_first_n_characters(self, pattern, text, n, j):
+    def check_first_n_characters(self, pattern, text, n, current_text_index):
         i = 0
         for i in range(n):
-            if(text[j+i] == pattern[i]):
+            if(text[current_text_index+i] == pattern[i]):
                 break
         return i+1
     
@@ -136,6 +136,8 @@ class Heuristic1:
 
     def search(self, text, pattern, chars_to_skip):
         table = preprocess_bad_character(pattern)
+        text_length = len(text)
+        pattern_len = len(pattern)
         i = 0
         skipped_alignments = 0
         foundList = []

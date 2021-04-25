@@ -6,6 +6,12 @@ import re
 import time
 import numpy as np
 
+pattern_names_label = []
+plot_counter = 0
+numOfRecords = 0
+numOfRecordsLen = 0
+currentRecord = 0
+
 def preprocessingForHeuristic2(bpos,pattern):
     charBeforeBorderLookup = defaultdict(list)
     i = 1
@@ -37,13 +43,16 @@ def preprocessingForHeuristic1(pattern):
     return charPositionTable
 
 
-def GetSequencesFromFile(file):
+def getSequencesFromFile(file):
+    global numOfRecords
+    global numOfRecordsLen
+    numOfRecords = 0
     with gzip.open(file, "rt") as handle:
-        for record in SeqIO.parse(handle, "fasta"):
+        list_of_seq = list(SeqIO.parse(handle, "fasta"))
+        numOfRecordsLen = len(list_of_seq)
+        for record in list_of_seq:
+            numOfRecords += 1
             yield str(record.seq).upper()
-
-listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
-pattern_names_label = []
 
 class UserTests:
     @staticmethod
@@ -64,9 +73,12 @@ class UserTests:
 
     @staticmethod
     def PerformTests():
+        i = 1
+        listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
         for sequence in UserTests.GetSequences():
             for pattern in UserTests.GetPatterns():
-                searchPattern(sequence, pattern)
+                searchPattern(sequence, pattern, i, listOfSkippedAlignments, len(UserTests.GetSequences())*len(UserTests.GetPatterns()) == i)
+                i+=1
 
 def preprocess_bad_character(pattern):
     bad_char_table = {}
@@ -160,7 +172,7 @@ class Heuristic1:
             else:
                return j + 1
 
-    def search(self, text, pattern):
+    def search(self, text, pattern, listOfSkippedAlignments):
         table = preprocessingForHeuristic1(pattern)
         text_length = len(text)
         pattern_len = len(pattern)
@@ -221,7 +233,7 @@ class Heuristic2:
                 if not foundCharMatch:
                    return shift[0]
 
-    def search(self, text, pattern):
+    def search(self, text, pattern, listOfSkippedAlignments):
         # s is shift of the pattern with respect to text
         s = 0
         pattern_length = len(pattern)
@@ -249,7 +261,7 @@ class Heuristic1and2:
     '''Search for a pattern in given text using 
     Boyer Moore algorithm with Good suffix rule '''
 
-    def search(self, text, pattern):
+    def search(self, text, pattern, listOfSkippedAlignments):
         # s is shift of the pattern with respect to text
         s = 0
         pattern_length = len(pattern)
@@ -310,7 +322,7 @@ class BadCharacterAndGoodSuffixRuleHeuristic:
                 bad_char_pos = table[text[s+j]]
             return max(1, j-bad_char_pos)
 
-    def search(self, text, pattern):
+    def search(self, text, pattern, listOfSkippedAlignments):
         # s is shift of the pattern with respect to text
         s = 0
         pattern_length = len(pattern)
@@ -344,11 +356,11 @@ class BoyesMooreAlgorithm:
                 "BadCharacterAndGoodSuffixRuleHeuristic":BadCharacterAndGoodSuffixRuleHeuristic(),
                  "NoHeuristic":NoHeuristic()}
     
-    def search(self, heuristic, text, pattern):
+    def search(self, heuristic, text, pattern, listOfSkippedAlignments):
         if (heuristic in self.Heuristics):
             start = time.time()
             print("     Starting search using: '" + heuristic + "'")
-            result = list(self.Heuristics[heuristic].search(text,pattern))
+            result = list(self.Heuristics[heuristic].search(text,pattern, listOfSkippedAlignments))
             print("     Number of matches: " + str(len(result)))
             #print("     Matches at: " + str(result))
             print("     Searching finished! Time spent: ", time.time() - start)
@@ -356,49 +368,71 @@ class BoyesMooreAlgorithm:
             print("     Heuristic '" + heuristic + "' is not implemented!")
 
 
-def searchPattern(text, pattern):
-    listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
+def searchPattern(text, pattern, i, listOfSkippedAlignments, forcePlot):
     #print("Searching text: \"" + text + "\" for pattern: \"" + pattern + "\"")
     bm = BoyesMooreAlgorithm()
-    bm.search("Heuristic1", text, pattern)
-    bm.search("Heuristic2", text, pattern)
-    bm.search("Heuristic1and2", text, pattern)
-    bm.search("BadCharacterAndGoodSuffixRuleHeuristic",  text, pattern)
-    bm.search("NoHeuristic",  text, pattern)
+    bm.search("Heuristic1", text, pattern, listOfSkippedAlignments)
+    bm.search("Heuristic2", text, pattern, listOfSkippedAlignments)
+    bm.search("Heuristic1and2", text, pattern, listOfSkippedAlignments)
+    bm.search("BadCharacterAndGoodSuffixRuleHeuristic",  text, pattern, listOfSkippedAlignments)
+    #bm.search("NoHeuristic",  text, pattern)
     #TO DO: Add assertion of lists with pattern found indices
-    pattern_names_label.append(pattern)
+    pattern_names_label.append("Sequence " + str(i) +"\nPattern: " + pattern)
 
-searchPattern( "AAAAAAAAAAAAAAAA", "A")
-searchPattern( "SFGATFGACGAAACGAGTAGCSFGATAGACGA", "AA")
-searchPattern( "CTCTCGAAGTAGCCGATTAGCCTATCG", "CTATCG")
+    showCharts(listOfSkippedAlignments, forcePlot)
 
-def showCharts():
-    barWidth = 0.15
-    r1 = np.arange(len(listOfSkippedAlignments["Heuristic1"]))
-    r2 = [x + barWidth for x in r1]
-    r3 = [x + barWidth for x in r2]
-    r4 = [x + barWidth for x in r3]
 
-    plt.bar(r1, listOfSkippedAlignments["Heuristic1"], color = "red", width = barWidth, edgecolor = 'white', label = "Heuristic1")
-    plt.bar(r2, listOfSkippedAlignments["Heuristic2"], color = "green", width = barWidth, edgecolor = 'white', label = "Heuristic2")
-    plt.bar(r3, listOfSkippedAlignments["Heuristic 1 and 2"], color = "blue", width = barWidth, edgecolor = 'white', label = "Heuristic 1 and 2")
-    plt.bar(r4, listOfSkippedAlignments["Boyer Moore"], color = "yellow", width = barWidth, edgecolor = 'white', label = "Boyer Moore")
+#searchPattern( "AAAAAAAAAAAAAAAA", "A", 1)
+#searchPattern( "SFGATFGACGAAACGAGTAGCSFGATAGACGA", "AA", 2)
+#searchPattern( "CTCTCGAAGTAGCCGATTAGCCTATCG", "CTATCG", 3)
 
-    plt.xlabel('group', fontweight='bold')
-    plt.xticks([r + barWidth for r in range(len(listOfSkippedAlignments["Heuristic1"]))], ['A','B', 'C'])
-    plt.set_title ("title")
+numOfCharts = 1;
 
-    for i, v in enumerate(y):
-        plt.text(xlocs[i] - 0.25, v + 0.01, str(v))
+def showCharts(listOfSkippedAlignments, forcePlot = False):
+    global plot_counter
+    global numOfCharts
 
-    plt.legend()
-    plt.show()
+    if plot_counter == 2 or forcePlot:
+        plt.clf()
+        plt.close()
+       
+        x = np.arange(len(pattern_names_label))  # the label locations
+        width = 0.2  # the width of the bars
+
+        fig, ax = plt.subplots()
+        numOfCharts += 1
+        rects1 = ax.bar(x, listOfSkippedAlignments["Heuristic1"], width, label='Heuristic1')
+        rects2 = ax.bar(x + width, listOfSkippedAlignments["Heuristic2"], width, label='Heuristic2')
+        rects3 = ax.bar(x + 2*width, listOfSkippedAlignments["Heuristic 1 and 2"], width, label='Heuristic 1 and 2')
+        rects4 = ax.bar(x + 3*width, listOfSkippedAlignments["Boyer Moore"], width, label='Boyer Moore')
+
+        # Add some text for labels, title and custom x-axis tick labels, etc.
+        ax.set_ylabel('Skipped alignments')
+        ax.set_title('Skipped alignments by heuristic and pattern')
+        ax.set_xticks([x + 1.5*width for x in range(len(listOfSkippedAlignments["Heuristic1"]))])
+        ax.set_xticklabels(pattern_names_label)
+        ax.legend()
+
+        ax.bar_label(rects1, padding=3)
+        ax.bar_label(rects2, padding=3)
+        ax.bar_label(rects3, padding=3)
+        ax.bar_label(rects4, padding=3)
+
+        fig.tight_layout()
+        plt.show()
+        pattern_names_label.clear()
+        listOfSkippedAlignments["Heuristic1"].clear()
+        listOfSkippedAlignments["Heuristic2"].clear()
+        listOfSkippedAlignments["Heuristic 1 and 2"].clear()
+        listOfSkippedAlignments["Boyer Moore"].clear()
+    plot_counter = (plot_counter + 1)%3
 
 #UserTests.PerformTests()
 
-showCharts()
 
 
-#for seq in GetSequencesFromFile(r"GCA_003713225.1_Cara_1.0_genomic.fna.gz"):
-#   searchPattern(seq, "ATGCATG")
+for seq in getSequencesFromFile(r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_003713225.1_Cara_1.0_genomic.fna.gz"):
+   currentRecord += 1
+   searchPattern(seq, "ATGCATG", currentRecord == numOfRecordsLen)
+print("Num of records: " + str(numOfRecords) + " len num: " + str(numOfRecordsLen))
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

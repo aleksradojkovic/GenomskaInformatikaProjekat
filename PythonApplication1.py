@@ -6,7 +6,10 @@ import gzip
 import re
 import time
 import numpy as np
+from PyPDF2 import PdfFileReader, PdfFileWriter
 
+output = PdfFileWriter()
+numOfCharts = 1;
 pattern_names_label = []
 plot_counter = 0
 numOfRecordsLen = 0
@@ -391,11 +394,10 @@ def searchPattern(text, pattern, i, listOfSkippedAlignments, forcePlot):
 
     showCharts(listOfSkippedAlignments, forcePlot)
 
-numOfCharts = 1;
-
 def showCharts(listOfSkippedAlignments, forcePlot = False):
     global plot_counter
     global numOfCharts
+    global output
 
     if plot_counter == 2 or forcePlot:
         plt.clf()
@@ -425,6 +427,8 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
 
         fig.tight_layout()
         plt.show()
+        pdf_save = plt.figure()
+        output.addPage(pdf_save)
         populate_table_entries(listOfSkippedAlignments, pattern_names_label)
         pattern_names_label.clear()
         listOfSkippedAlignments["Heuristic1"].clear()
@@ -433,15 +437,19 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
         listOfSkippedAlignments["Boyer Moore"].clear()
     plot_counter = (plot_counter + 1)%3
 
-#UserTests.PerformTests()
+UserTests.PerformTests()
 
-for file in listOfFiles:
-    listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
-    currentRecord = 0
-    table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
-    for seq in getSequencesFromFile(file):
-       currentRecord += 1
-       for pattern in listOfPatterns:
-           searchPattern(seq, pattern, currentRecord, listOfSkippedAlignments, currentRecord == numOfRecordsLen)
-    print(tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True))
+#for file in listOfFiles:
+#    listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
+#   currentRecord = 0
+#   table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
+#   for seq in getSequencesFromFile(file):
+#       currentRecord += 1
+#       for pattern in listOfPatterns:
+#           searchPattern(seq, pattern, currentRecord, listOfSkippedAlignments, currentRecord == numOfRecordsLen)
+#    print(tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True))
+
+outputStream = open(r"output.pdf", "wb")
+output.write(outputStream)
+outputStream.close()
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

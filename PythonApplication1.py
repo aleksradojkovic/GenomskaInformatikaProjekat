@@ -8,6 +8,32 @@ listOfSkippedalignments = defaultdict(list)
 listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
 pattern_names_label = []
 
+class UserTests:
+    @staticmethod
+    def GetSequences():
+        return {"AAAAAAAAAAAAAAAA",
+                "SFGATFGACGAAACGAGTAGCSFGATAGACGA",
+                "CTATCGAAGTAGCCGATTAGC",
+                ""
+            }
+
+    @staticmethod
+    def GetPatterns():
+        return {#"A", check_first_n_chars vece od len(pat)?
+                #"AA", isto kao i gore?
+                "CGA",
+                "SFGATAGACGA"
+            }
+
+    @staticmethod
+    def PerformTests():
+        for sequence in UserTests.GetSequences():
+            for pattern in UserTests.GetPatterns():
+                bm = BoyesMooreAlgorithm()
+                bm.search("Heuristic1", sequence, pattern, 2)
+                bm.search("Heuristic2", sequence, pattern, 1)
+                bm.search("Heuristic1and2", sequence, pattern, 2)
+                bm.search("BadCharacterAndGoodSuffixRuleHeuristic",  sequence, pattern, 1)
 
 def preprocess_bad_character(pattern):
     bad_char_table = {}
@@ -90,9 +116,9 @@ class Heuristic1:
     
         #s (i) u ovom kontekstu dokle smo stigli u tekstu, indeks kursora na tekst (odkale poceti search za oviu iteraciju)
         #ova funkcija vraca pomjeraj za heuristiku 1. Kad  je chars_to_skip jednak jedinici, ova heuristika postaje bad character rule
-    def getNextShift(self, i, text, pattern, chars_to_skip, table, foundList):
+    def getNextShift(self, i, text, pattern, chars_to_skip, table, foundList, text_length, pattern_length):
         current_text_index = i
-        j = len(pattern) - 1
+        j = pattern_length - 1
         while(j>=0 and pattern[j] == text[i+j]):
             j=j-1
         if(j<0):
@@ -101,17 +127,22 @@ class Heuristic1:
             return 1
             #i = i + 1
         else:
-            current_text_index = current_text_index + len(pattern) - j
+            current_text_index = current_text_index + pattern_length - j
+            current_text_index_shift = 1
+            if current_text_index < text_length:
+                current_text_index_shift = self.check_first_n_characters(pattern, text, chars_to_skip, current_text_index)
             #i = i + max(self.check_first_n_characters(pattern, text, chars_to_skip, current_text_index), j-self.get_last_occurence(text[i+j],table))
-            return max(self.check_first_n_characters(pattern, text, chars_to_skip, current_text_index), j-self.get_last_occurence(text[i+j],table))
+            return max(current_text_index_shift, j-self.get_last_occurence(text[i+j],table))
 
     def search(self, text, pattern, chars_to_skip):
         table = preprocess_bad_character(pattern)
         i = 0
         skipped_alignments = 0
         foundList = []
-        while(i<=len(text) - len(pattern)):
-            shift = self.getNextShift(i, text, pattern, chars_to_skip, table, foundList)
+        text_length = len(text)
+        pattern_length = len(pattern)
+        while(i<=text_length - pattern_length):
+            shift = self.getNextShift(i, text, pattern, chars_to_skip, table, foundList, text_length, pattern_length)
             #preimenovati u broj iteracija. Posto je kod naivnog algoritma broj iteracija jednak duzini teksta, broj preskocenih poredjenja je jednak razlici broja iteracija
             #naivnog algoritma i broja iteracija heuristike
             skipped_alignments += 1
@@ -215,6 +246,7 @@ class Heuristic1and2:
         # s is shift of the pattern with respect to text
         s = 0
         m = len(pat)
+        text_len = len(text)
         # do preprocessing for heuristic 1
         bad_char_table = preprocess_bad_character(pat)
         # end preprocessing for heuristic 1
@@ -236,7 +268,7 @@ class Heuristic1and2:
         foundListSuffix = []
         foundListCharacter = []
         while s <= len(text) - len(pat):
-            shift_amount = max(heuristic2.getNextShift(s, text, pat, shift, bpos, charBeforeBorderLookup, foundListSuffix), heuristic1.getNextShift(s, text, pat, n, bad_char_table, foundListCharacter))
+            shift_amount = max(heuristic2.getNextShift(s, text, pat, shift, bpos, charBeforeBorderLookup, foundListSuffix), heuristic1.getNextShift(s, text, pat, n, bad_char_table, foundListCharacter, text_len, m))
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
@@ -279,7 +311,7 @@ class BadCharacterAndGoodSuffixRuleHeuristic:
         foundListSuffix = []
         foundListCharacter = []
         while s <= len(text) - len(pat):
-            shift_amount = max(self.getNextShiftGoodSuffix(s, text, pat, shift, bpos, foundListSuffix), bad_char.getNextShift(s, text, pat, 1, bad_char_table, foundListCharacter))
+            shift_amount = max(self.getNextShiftGoodSuffix(s, text, pat, shift, bpos, foundListSuffix), bad_char.getNextShift(s, text, pat, 1, bad_char_table, foundListCharacter, n, m))
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
@@ -320,9 +352,9 @@ def searchPattern(text, pattern, skip_param_heuristic1):
     #TO DO: Add assertion of lists with pattern found indices
     pattern_names_label.append(pattern)
 
-searchPattern( "AAAAAAAAAAAAAAAA", "A", 2)
-searchPattern( "SFGATFGACGAAACGAGTAGCSFGATAGACGA", "SFGATAGACGA", 2)
-searchPattern( "CTATCGAAGTAGCCGATTAGC", "CGA", 2)
+#searchPattern( "AAAAAAAAAAAAAAAA", "A", 2)
+#searchPattern( "SFGATFGACGAAACGAGTAGCSFGATAGACGA", "AA", 2)
+#searchPattern( "CTATCGAAGTAGCCGATTAGC", "CGA", 2)
 
 def showCharts():
     x = np.arange(len(pattern_names_label))  # the label locations
@@ -349,5 +381,7 @@ def showCharts():
     fig.tight_layout()
     plt.show()
 
-showCharts()
+#showCharts()
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju
+
+UserTests.PerformTests()

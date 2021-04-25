@@ -1,6 +1,7 @@
 from Bio import SeqIO
 from collections import defaultdict
 from matplotlib import pyplot as plt 
+from tabulate import tabulate
 import gzip
 import re
 import time
@@ -8,10 +9,20 @@ import numpy as np
 
 pattern_names_label = []
 plot_counter = 0
-numOfRecords = 0
 numOfRecordsLen = 0
 currentRecord = 0
+table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
 
+def populate_table_entries(listOfSkippedAlignments, pattern_names_label):
+    global table_entries
+    number_of_items = len(listOfSkippedAlignments['Heuristic1'])
+    for i in range(number_of_items):
+        table_entries.append([pattern_names_label[i], listOfSkippedAlignments['Heuristic1'][i], 'Heuristic 1'])
+        table_entries.append([pattern_names_label[i], listOfSkippedAlignments['Heuristic2'][i], 'Heuristic 2'])
+        table_entries.append([pattern_names_label[i], listOfSkippedAlignments['Heuristic 1 and 2'][i], 'Heuristic 1 and 2'])
+        table_entries.append([pattern_names_label[i], listOfSkippedAlignments['Boyer Moore'][i], 'Boyer Moore'])
+        
+        
 def preprocessingForHeuristic2(bpos,pattern):
     charBeforeBorderLookup = defaultdict(list)
     i = 1
@@ -44,14 +55,11 @@ def preprocessingForHeuristic1(pattern):
 
 
 def getSequencesFromFile(file):
-    global numOfRecords
     global numOfRecordsLen
-    numOfRecords = 0
     with gzip.open(file, "rt") as handle:
         list_of_seq = list(SeqIO.parse(handle, "fasta"))
         numOfRecordsLen = len(list_of_seq)
         for record in list_of_seq:
-            numOfRecords += 1
             yield str(record.seq).upper()
 
 class UserTests:
@@ -381,11 +389,6 @@ def searchPattern(text, pattern, i, listOfSkippedAlignments, forcePlot):
 
     showCharts(listOfSkippedAlignments, forcePlot)
 
-
-#searchPattern( "AAAAAAAAAAAAAAAA", "A", 1)
-#searchPattern( "SFGATFGACGAAACGAGTAGCSFGATAGACGA", "AA", 2)
-#searchPattern( "CTCTCGAAGTAGCCGATTAGCCTATCG", "CTATCG", 3)
-
 numOfCharts = 1;
 
 def showCharts(listOfSkippedAlignments, forcePlot = False):
@@ -420,6 +423,7 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
 
         fig.tight_layout()
         plt.show()
+        populate_table_entries(listOfSkippedAlignments, pattern_names_label)
         pattern_names_label.clear()
         listOfSkippedAlignments["Heuristic1"].clear()
         listOfSkippedAlignments["Heuristic2"].clear()
@@ -427,12 +431,12 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
         listOfSkippedAlignments["Boyer Moore"].clear()
     plot_counter = (plot_counter + 1)%3
 
-#UserTests.PerformTests()
+UserTests.PerformTests()
 
 
-
-for seq in getSequencesFromFile(r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_003713225.1_Cara_1.0_genomic.fna.gz"):
-   currentRecord += 1
-   searchPattern(seq, "ATGCATG", currentRecord == numOfRecordsLen)
-print("Num of records: " + str(numOfRecords) + " len num: " + str(numOfRecordsLen))
+listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
+#for seq in getSequencesFromFile(r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_003713225.1_Cara_1.0_genomic.fna.gz"):
+#   currentRecord += 1
+#   searchPattern(seq, "ATGCATG", currentRecord == numOfRecordsLen)
+print(tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True))
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

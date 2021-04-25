@@ -1,10 +1,16 @@
-from matplotlib import pyplot as plt 
-import time
-import re
+from Bio import SeqIO
 from collections import defaultdict
-import numpy as np
+from matplotlib import pyplot as plt 
+import gzip
+import re
+import time
 
-listOfSkippedalignments = defaultdict(list)
+
+def GetSequencesFromFile(file):
+    with gzip.open(file, "rt") as handle:
+        for record in SeqIO.parse(handle, "fasta"):
+            yield str(record.seq).upper()
+
 listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
 pattern_names_label = []
 
@@ -345,7 +351,8 @@ class BoyesMooreAlgorithm:
 
 
 def searchPattern(text, pattern, skip_param_heuristic1):
-    print("Searching text: \"" + text + "\" for pattern: \"" + pattern + "\"")
+    listOfSkippedAlignments.clear()
+    #print("Searching text: \"" + text + "\" for pattern: \"" + pattern + "\"")
     bm = BoyesMooreAlgorithm()
     bm.search("Heuristic1", text, pattern, skip_param_heuristic1)
     bm.search("Heuristic2", text, pattern, 1)
@@ -356,7 +363,7 @@ def searchPattern(text, pattern, skip_param_heuristic1):
 
 #searchPattern( "AAAAAAAAAAAAAAAA", "A", 2)
 #searchPattern( "SFGATFGACGAAACGAGTAGCSFGATAGACGA", "AA", 2)
-#searchPattern( "CTATCGAAGTAGCCGATTAGC", "CGA", 2)
+searchPattern( "CTATCGAAGTAGCCGATTAGC", "CGA", 2)
 
 def showCharts():
     x = np.arange(len(pattern_names_label))  # the label locations
@@ -384,6 +391,9 @@ def showCharts():
     plt.show()
 
 #showCharts()
-#TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju
 
-UserTests.PerformTests()
+#UserTests.PerformTests()
+
+#for seq in GetSequencesFromFile(r"C:\Users\Aleksandar\GCA_003713225.1_Cara_1.0_genomic.fna.gz"):
+#    searchPattern(seq, "ATGCATG", 2)
+#TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

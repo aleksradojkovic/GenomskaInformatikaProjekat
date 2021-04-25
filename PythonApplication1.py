@@ -2,8 +2,12 @@ from matplotlib import pyplot as plt
 import time
 import re
 from collections import defaultdict
+import numpy as np
 
-listOfSkippedAlignments = []
+listOfSkippedalignments = defaultdict(list)
+listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
+pattern_names_label = []
+
 
 def preprocess_bad_character(pattern):
     bad_char_table = {}
@@ -113,7 +117,7 @@ class Heuristic1:
             skipped_alignments += 1
             i += shift
         skipped_alignments = len(text) - skipped_alignments
-        listOfSkippedAlignments.append(skipped_alignments)
+        listOfSkippedAlignments["Heuristic1"].append(skipped_alignments)
         print("     Total skipped alignments by heuristic 1 with n = " + str(chars_to_skip) +" is: " + str(skipped_alignments))
         return foundList
 
@@ -198,7 +202,7 @@ class Heuristic2:
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
-        listOfSkippedAlignments.append(skipped_alignments)
+        listOfSkippedAlignments["Heuristic2"].append(skipped_alignments)
         print("     Total skipped alignments by heuristic 2 = " + str(skipped_alignments))
         return foundList
 
@@ -236,7 +240,7 @@ class Heuristic1and2:
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
-        listOfSkippedAlignments.append(skipped_alignments)
+        listOfSkippedAlignments["Heuristic 1 and 2"].append(skipped_alignments)
         print("     Total skipped alignments by heuristic 1 and 2 with n = " + str(n) +" is: " + str(skipped_alignments))
         return foundListSuffix
 
@@ -279,7 +283,7 @@ class BadCharacterAndGoodSuffixRuleHeuristic:
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
-        listOfSkippedAlignments.append(skipped_alignments)
+        listOfSkippedAlignments["Boyer Moore"].append(skipped_alignments)
         print("     Total skipped alignments by Boyer Moore full algorithm = " + str(skipped_alignments))
         return foundListSuffix
 
@@ -307,7 +311,6 @@ class BoyesMooreAlgorithm:
 
 
 def searchPattern(text, pattern, skip_param_heuristic1):
-    listOfSkippedAlignments.clear()
     print("Searching text: \"" + text + "\" for pattern: \"" + pattern + "\"")
     bm = BoyesMooreAlgorithm()
     bm.search("Heuristic1", text, pattern, skip_param_heuristic1)
@@ -315,11 +318,34 @@ def searchPattern(text, pattern, skip_param_heuristic1):
     bm.search("Heuristic1and2", text, pattern, skip_param_heuristic1)
     bm.search("BadCharacterAndGoodSuffixRuleHeuristic",  text, pattern, 1)
     #TO DO: Add assertion of lists with pattern found indices
-    heuristicNames = ["Heuristic1", "Heuristic2", "Heuristic 1 and 2 combined", "BadCharacterAndGoodSuffixRuleHeuristic"]
-    plt.plot(heuristicNames, listOfSkippedAlignments)
-    plt.show()
+    pattern_names_label.append(pattern)
 
 searchPattern( "AAAAAAAAAAAAAAAA", "A", 2)
 searchPattern( "SFGATFGACGAAACGAGTAGCSFGATAGACGA", "SFGATAGACGA", 2)
 searchPattern( "CTATCGAAGTAGCCGATTAGC", "CGA", 2)
+
+x = np.arange(len(pattern_names_label))  # the label locations
+width = 0.8  # the width of the bars
+
+fig, ax = plt.subplots()
+rects1 = ax.bar(x - 2*width/4, listOfSkippedAlignments["Heuristic1"], width, label='Heuristic1')
+rects2 = ax.bar(x - width/4, listOfSkippedAlignments["Heuristic2"], width, label='Heuristic2')
+rects3 = ax.bar(x + width/4, listOfSkippedAlignments["Heuristic 1 and 2"], width, label='Heuristic 1 and 2')
+rects4 = ax.bar(x + 2*width/4, listOfSkippedAlignments["Boyer Moore"], width, label='Boyer Moore')
+
+# Add some text for labels, title and custom x-axis tick labels, etc.
+ax.set_ylabel('Skipped alignments')
+ax.set_title('Skipped alignments by heuristic and pattern')
+ax.set_xticks(x)
+ax.set_xticklabels(pattern_names_label)
+ax.legend()
+
+ax.bar_label(rects1, padding=3)
+ax.bar_label(rects2, padding=3)
+ax.bar_label(rects3, padding=3)
+ax.bar_label(rects4, padding=3)
+
+fig.tight_layout()
+plt.plot(heuristicNames, listOfSkippedAlignments)
+plt.show()
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

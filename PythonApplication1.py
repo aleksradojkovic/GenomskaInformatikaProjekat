@@ -324,27 +324,30 @@ searchPattern( "AAAAAAAAAAAAAAAA", "A", 2)
 searchPattern( "SFGATFGACGAAACGAGTAGCSFGATAGACGA", "SFGATAGACGA", 2)
 searchPattern( "CTATCGAAGTAGCCGATTAGC", "CGA", 2)
 
-x = np.arange(len(pattern_names_label))  # the label locations
-width = 0.8  # the width of the bars
+def showCharts():
+    x = np.arange(len(pattern_names_label))  # the label locations
+    width = 0.8  # the width of the bars
 
-fig, ax = plt.subplots()
-rects1 = ax.bar(x - 2*width/4, listOfSkippedAlignments["Heuristic1"], width, label='Heuristic1')
-rects2 = ax.bar(x - width/4, listOfSkippedAlignments["Heuristic2"], width, label='Heuristic2')
-rects3 = ax.bar(x + width/4, listOfSkippedAlignments["Heuristic 1 and 2"], width, label='Heuristic 1 and 2')
-rects4 = ax.bar(x + 2*width/4, listOfSkippedAlignments["Boyer Moore"], width, label='Boyer Moore')
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(x - 2*width/4, listOfSkippedAlignments["Heuristic1"], width, label='Heuristic1')
+    rects2 = ax.bar(x - width/4, listOfSkippedAlignments["Heuristic2"], width, label='Heuristic2')
+    rects3 = ax.bar(x + width/4, listOfSkippedAlignments["Heuristic 1 and 2"], width, label='Heuristic 1 and 2')
+    rects4 = ax.bar(x + 2*width/4, listOfSkippedAlignments["Boyer Moore"], width, label='Boyer Moore')
 
-# Add some text for labels, title and custom x-axis tick labels, etc.
-ax.set_ylabel('Skipped alignments')
-ax.set_title('Skipped alignments by heuristic and pattern')
-ax.set_xticks(x)
-ax.set_xticklabels(pattern_names_label)
-ax.legend()
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_ylabel('Skipped alignments')
+    ax.set_title('Skipped alignments by heuristic and pattern')
+    ax.set_xticks(x)
+    ax.set_xticklabels(pattern_names_label)
+    ax.legend()
 
-ax.bar_label(rects1, padding=3)
-ax.bar_label(rects2, padding=3)
-ax.bar_label(rects3, padding=3)
-ax.bar_label(rects4, padding=3)
+    ax.bar_label(rects1, padding=3)
+    ax.bar_label(rects2, padding=3)
+    ax.bar_label(rects3, padding=3)
+    ax.bar_label(rects4, padding=3)
 
-fig.tight_layout()
-plt.show()
+    fig.tight_layout()
+    plt.show()
+
+showCharts()
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

@@ -9,12 +9,8 @@ import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 import io
 
-
-numOfCharts = 1;
 pattern_names_label = []
-plot_counter = 0
 numOfRecordsLen = 0
-currentRecord = 0
 table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
 listOfFiles = [r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_003713225.1_Cara_1.0_genomic.fna.gz", r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_003957725.1_ASM395772v1_genomic.fna.gz", r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_900095145.2_PAHARI_EIJ_v1.1_genomic.fna.gz" ]
 listOfPatterns = [["ATGCATG", "TCTCTCTA", "TTCACTACTCTCA"], ["ATGATG", "CTCTCTA", "TCACTACTCTCA"], ["ACGATG", "CTCGACTA", "TCACTACTAATTCG"]]
@@ -88,12 +84,10 @@ class UserTests:
 
     @staticmethod
     def PerformTests():
-        i = 1
         listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
         for sequence in UserTests.GetSequences():
             for pattern in UserTests.GetPatterns():
-                searchPattern(sequence, pattern, i, listOfSkippedAlignments, len(UserTests.GetSequences())*len(UserTests.GetPatterns()) == i)
-                i+=1
+                searchPattern(sequence, pattern, listOfSkippedAlignments)
 
 def preprocess_bad_character(pattern):
     bad_char_table = {}
@@ -383,7 +377,7 @@ class BoyesMooreAlgorithm:
             print("     Heuristic '" + heuristic + "' is not implemented!")
 
 
-def searchPattern(text, pattern, i, listOfSkippedAlignments, forcePlot):
+def searchPattern(text, pattern, listOfSkippedAlignments):
     #print("Searching text: \"" + text + "\" for pattern: \"" + pattern + "\"")
     bm = BoyesMooreAlgorithm()
     bm.search("Heuristic1", text, pattern, listOfSkippedAlignments)
@@ -392,72 +386,57 @@ def searchPattern(text, pattern, i, listOfSkippedAlignments, forcePlot):
     bm.search("BadCharacterAndGoodSuffixRuleHeuristic",  text, pattern, listOfSkippedAlignments)
     #bm.search("NoHeuristic",  text, pattern)
     #TO DO: Add assertion of lists with pattern found indices
-    pattern_names_label.append("Sequence " + str(i) +"\nPattern: " + pattern)
 
-    showCharts(listOfSkippedAlignments, forcePlot)
+def showCharts(listOfSkippedAlignments):
+    global pattern_names_label
+    plt.clf()
 
-def showCharts(listOfSkippedAlignments, forcePlot = False):
-    global plot_counter
-    global numOfCharts
-    global output
+    x = np.arange(len(pattern_names_label))  # the label locations
+    width = 0.2  # the width of the bars
 
-    if plot_counter == 3 or forcePlot:
-        #plt.clf()
-        #plt.close()
-        x = np.arange(len(pattern_names_label))  # the label locations
-        width = 0.2  # the width of the bars
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(x, listOfSkippedAlignments["Heuristic1"], width, label='Heuristic1')
+    rects2 = ax.bar(x + width, listOfSkippedAlignments["Heuristic2"], width, label='Heuristic2')
+    rects3 = ax.bar(x + 2*width, listOfSkippedAlignments["Heuristic 1 and 2"], width, label='Heuristic 1 and 2')
+    rects4 = ax.bar(x + 3*width, listOfSkippedAlignments["Boyer Moore"], width, label='Boyer Moore')
 
-        fig, ax = plt.subplots()
-        numOfCharts += 1
-        rects1 = ax.bar(x, listOfSkippedAlignments["Heuristic1"], width, label='Heuristic1')
-        rects2 = ax.bar(x + width, listOfSkippedAlignments["Heuristic2"], width, label='Heuristic2')
-        rects3 = ax.bar(x + 2*width, listOfSkippedAlignments["Heuristic 1 and 2"], width, label='Heuristic 1 and 2')
-        rects4 = ax.bar(x + 3*width, listOfSkippedAlignments["Boyer Moore"], width, label='Boyer Moore')
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_ylabel('Skipped alignments')
+    ax.set_title('Skipped alignments by heuristic and pattern')
+    ax.set_xticks([x + 1.5*width for x in range(len(listOfSkippedAlignments["Heuristic1"]))])
+    ax.set_xticklabels(pattern_names_label)
+    ax.legend()
 
-        # Add some text for labels, title and custom x-axis tick labels, etc.
-        ax.set_ylabel('Skipped alignments')
-        ax.set_title('Skipped alignments by heuristic and pattern')
-        ax.set_xticks([x + 1.5*width for x in range(len(listOfSkippedAlignments["Heuristic1"]))])
-        ax.set_xticklabels(pattern_names_label)
-        ax.legend()
+    ax.bar_label(rects1, padding=3)
+    ax.bar_label(rects2, padding=3)
+    ax.bar_label(rects3, padding=3)
+    ax.bar_label(rects4, padding=3)
 
-        ax.bar_label(rects1, padding=3)
-        ax.bar_label(rects2, padding=3)
-        ax.bar_label(rects3, padding=3)
-        ax.bar_label(rects4, padding=3)
+    fig.tight_layout()     
+    pdf.savefig(fig)
+    plt.show()
 
-        fig.tight_layout()
-        #plt.show()
-        
-        pdf.savefig(fig)
-
-
-        populate_table_entries(listOfSkippedAlignments, pattern_names_label)
-        pattern_names_label.clear()
-        listOfSkippedAlignments["Heuristic1"].clear()
-        listOfSkippedAlignments["Heuristic2"].clear()
-        listOfSkippedAlignments["Heuristic 1 and 2"].clear()
-        listOfSkippedAlignments["Boyer Moore"].clear()
-    plot_counter = (plot_counter + 1)%4
-
-#with PdfPages('plots.pdf') as pdf:
-#    UserTests.PerformTests()
-
+    populate_table_entries(listOfSkippedAlignments, pattern_names_label)
+    pattern_names_label.clear()
+    listOfSkippedAlignments["Heuristic1"].clear()
+    listOfSkippedAlignments["Heuristic2"].clear()
+    listOfSkippedAlignments["Heuristic 1 and 2"].clear()
+    listOfSkippedAlignments["Boyer Moore"].clear()
 
 # save the pdf with name .pdf
 numFile = 0
 for file in listOfFiles:
+    listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
+    table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
     with PdfPages("plots_" + file + ".pdf") as pdf:
-        listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
-        currentRecord = 0
-        table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
         for seq in getSequencesFromFile(file):
-            currentRecord += 1
             for pattern in listOfPatterns[numFile]:
-                searchPattern(seq, pattern, currentRecord, listOfSkippedAlignments, currentRecord == numOfRecordsLen)
+                pattern_names_label.append(pattern)
+                searchPattern(seq, pattern, listOfSkippedAlignments)
         tableText = tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True)
         with io.open(r"table_" + file + ".txt", 'w', encoding='utf-8') as tableFile:
             tableFile.write(tableText)
     numFile += 1
+    showCharts(listOfSkippedAlignments)
 
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

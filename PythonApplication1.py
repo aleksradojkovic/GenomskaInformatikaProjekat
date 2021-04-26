@@ -401,7 +401,7 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
     global numOfCharts
     global output
 
-    if plot_counter == 2 or forcePlot:
+    if plot_counter == 3 or forcePlot:
         #plt.clf()
         #plt.close()
         x = np.arange(len(pattern_names_label))  # the label locations
@@ -438,13 +438,14 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
         listOfSkippedAlignments["Heuristic2"].clear()
         listOfSkippedAlignments["Heuristic 1 and 2"].clear()
         listOfSkippedAlignments["Boyer Moore"].clear()
-    plot_counter = (plot_counter + 1)%3
+    plot_counter = (plot_counter + 1)%4
 
 #with PdfPages('plots.pdf') as pdf:
 #    UserTests.PerformTests()
 
 
 # save the pdf with name .pdf
+numFile = 0
 for file in listOfFiles:
     with PdfPages("plots_" + file + ".pdf") as pdf:
         listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
@@ -452,10 +453,11 @@ for file in listOfFiles:
         table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
         for seq in getSequencesFromFile(file):
             currentRecord += 1
-            for pattern in listOfPatterns:
+            for pattern in listOfPatterns[numFile]:
                 searchPattern(seq, pattern, currentRecord, listOfSkippedAlignments, currentRecord == numOfRecordsLen)
         tableText = tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True)
         with io.open(r"table_" + file + ".txt", 'w', encoding='utf-8') as tableFile:
             tableFile.write(tableText)
+    numFile += 1
 
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

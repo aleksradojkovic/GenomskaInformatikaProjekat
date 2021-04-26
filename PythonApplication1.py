@@ -7,6 +7,8 @@ import re
 import time
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
+import io
+
 
 numOfCharts = 1;
 pattern_names_label = []
@@ -16,6 +18,7 @@ currentRecord = 0
 table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
 listOfFiles = [r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_003713225.1_Cara_1.0_genomic.fna.gz", r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_003957725.1_ASM395772v1_genomic.fna.gz", r"C:\Users\Aleksandar\source\repos\PythonApplication1\PythonApplication1\GCA_900095145.2_PAHARI_EIJ_v1.1_genomic.fna.gz" ]
 listOfPatterns = [["ATGCATG", "TCTCTCTA", "TTCACTACTCTCA"], ["ATGATG", "CTCTCTA", "TCACTACTCTCA"], ["ACGATG", "CTCGACTA", "TCACTACTAATTCG"]]
+
 
 def populate_table_entries(listOfSkippedAlignments, pattern_names_label):
     global table_entries
@@ -437,17 +440,22 @@ def showCharts(listOfSkippedAlignments, forcePlot = False):
         listOfSkippedAlignments["Boyer Moore"].clear()
     plot_counter = (plot_counter + 1)%3
 
-with PdfPages('plots.pdf') as pdf:
-    UserTests.PerformTests()
+#with PdfPages('plots.pdf') as pdf:
+#    UserTests.PerformTests()
 
-#for file in listOfFiles:
-#    listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
-#   currentRecord = 0
-#   table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
-#   for seq in getSequencesFromFile(file):
-#       currentRecord += 1
-#       for pattern in listOfPatterns:
-#           searchPattern(seq, pattern, currentRecord, listOfSkippedAlignments, currentRecord == numOfRecordsLen)
-#    print(tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True))
+
+# save the pdf with name .pdf
+for file in listOfFiles:
+    with PdfPages("plots_" + file + ".pdf") as pdf:
+        listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
+        currentRecord = 0
+        table_entries = [['Sequence number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
+        for seq in getSequencesFromFile(file):
+            currentRecord += 1
+            for pattern in listOfPatterns:
+                searchPattern(seq, pattern, currentRecord, listOfSkippedAlignments, currentRecord == numOfRecordsLen)
+        tableText = tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True)
+        with io.open(r"table_" + file + ".txt", 'w', encoding='utf-8') as tableFile:
+            tableFile.write(tableText)
 
 #TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

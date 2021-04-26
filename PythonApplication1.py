@@ -444,9 +444,9 @@ def searchGenomesFromFiles():
     global pattern_names_label
     global pdf
     numFile = 0
-    listOfFiles = [r"chr1c.fna.gz", r"chrX.fna.gz", r"GCA_900095145.2_PAHARI_EIJ_v1.1_genomic.fna.gz" ]
+    listOfFiles = [r"chr1c.fna.gz", r"chrX.fna.gz", r"GCA_003957725.1_ASM395772v1_genomic.fna.gz" ]
     fileNames = ["Coffea arabica chr 1C", "Mus pahari chr X", "Octopus vulgaris whole genome"]
-    listOfPatterns = [["ATGCATG", "TCTCTCTA", "TTCACTACTCTCA"], ["ATGATG", "CTCTCTA", "TCACTACTCTCA"], ["ACGATG", "CTCGACTA", "TCACTACTAATTCG"]]
+    listOfPatterns = [["ATGCATG", "TCTCTCTA", "TTCACTACTCTCA"], ["ATGATG", "CTCTCTA", "TCACTACTCTCA"], ["ACGATGAGCGTGCTCCGCA", "CTCGACTAACGCCTA", "TATCCGGCGACGTCGGT"]]
     for file in listOfFiles:
         start = time.time()
         print("Searching file: " + file)
@@ -455,7 +455,7 @@ def searchGenomesFromFiles():
         with PdfPages("plots_" + file + ".pdf") as pdf:
             for seq in getSequencesFromFile(file):
                 for pattern in listOfPatterns[numFile]:
-                    pattern_names_label.append("Genome and chromosome :\n" + fileNames(numFile) + '\n' + "Pattern: " + pattern)
+                    pattern_names_label.append("Genome and chromosome :\n" + fileNames[numFile] + '\n' + "Pattern: " + pattern)
                     searchPattern(seq, pattern, listOfSkippedAlignments)
             showCharts(listOfSkippedAlignments)
             tableText = tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True)
@@ -467,5 +467,3 @@ def searchGenomesFromFiles():
 
 #searchGenomesFromFiles()
 UserTests.PerformTests()
-
-#TO DO: Ako se bude imalo vremena, izdvojiti preprocesiranje za heuristiku 2 u zasebnu funkciju

@@ -57,7 +57,6 @@ def getSequencesFromFile(file):
             yield str(record.seq).upper()
 
 class UserTests:
-   class UserTests:
     @staticmethod
     def GetSequences():
         return {"AAAAAAAAAAAAAAAA",

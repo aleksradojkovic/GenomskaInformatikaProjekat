@@ -33,17 +33,7 @@ def preprocessingForHeuristic2(bpos,pattern):
         if pattern[bpos[i]:]:
             charBeforeBorderLookup[pattern[bpos[i]:]].append({'previousChar':pattern[i-1], 'index':i-1})
         i+=1
-    #ako hocemo da imamo prethodno slovo od poslednjeg u nizu ponavljajucih suffixa, mada je nepotrebno, posto ako na njima padne svakako postoji sledeci
-    #a ako njih prodje, nema potrebe da ih vise razmatramo u okviru iste iteracije
-    #bposset = set(bpos)
-    #for item in bposset:
-    #    u bpossetu se nalaze jedinstveni indeksi; ovo se radi da bi se dodao karakter koji se nalazi prije poslednjeg u nizu ponavljajucih suffixa, a ovo uspijeva
-    #    zahvaljujuci cinjenici da svaki od suffixa u bpos nizu sadrzi indeks posljednjeg suffixa; iteracijom kroz ovaj bposset dodajemo prethodnike posljednjih suffixa
-    #    if item <= m and pattern[item:]:
-    #        charBeforeBorderLookup[pattern[item:]].append({'previousChar':pattern[item-1], 'index':item-1})
-    #        charBeforeBorderLookup[pattern[item:]].reverse()
-    #print(bposset)
-        
+
     for key in charBeforeBorderLookup:
         charBeforeBorderLookup[key].reverse()
     return charBeforeBorderLookup
@@ -76,10 +66,10 @@ class UserTests:
 
     @staticmethod
     def GetPatterns():
-        return {#"A", check_first_n_chars vece od len(pattern)?
-                #"AA", isto kao i gore?
+        return {
                 "CGA",
-                "SFGATAGACGA"
+                "SFGATAGACGA",
+                "AACCACCAC"
             }
 
     @staticmethod
@@ -118,7 +108,7 @@ def preprocess_strong_suffix(pattern, m):
 
     bpos = [0] * (m + 1)
   
-    # initialize all occurrence of shift to 0
+    # Initialize all occurrence of shift to 0
     shift = [0] * (m + 1)
 
     bpos[i] = j
@@ -207,8 +197,6 @@ class Heuristic1:
         pattern_length = len(pattern)
         while(i <= text_length - pattern_length):
             shift = self.getNextShift(i, text, pattern, table, foundList, text_length, pattern_length)
-            #preimenovati u broj iteracija. Posto je kod naivnog algoritma broj iteracija jednak duzini teksta, broj preskocenih poredjenja je jednak razlici broja iteracija
-            #naivnog algoritma i broja iteracija heuristike
             skipped_alignments += 1
             i += shift
         skipped_alignments = len(text) - skipped_alignments
@@ -218,8 +206,6 @@ class Heuristic1:
 
 class Heuristic2:
   
-    '''Search for a pattern in given text using 
-    Boyer Moore algorithm with Good suffix rule '''
     def getNextShift(self, s, text, pattern, shift, bpos, charBeforeBorderLookup, foundList):
   
         j = len(pattern) - 1
@@ -244,8 +230,8 @@ class Heuristic2:
                 listOfPrevChr = charBeforeBorderLookup[pattern[bpos[j]:]]
                 for item in listOfPrevChr:
                     foundHashLookup = True
-                    #uslov da je index manji od jot je VRLO BITAN. Zato sto bez tog uslova bi u patternu sa ponavljajucim sufixima, mogli da dobijemo negativan pomjeraj
-                    #ako se pattern ne poklopi na slovu koje je lijevo od jednog od ponavljajucih suffixa
+                    # The condition item['index'] < j is very important because if we didn't do that check, we could get a negative shift. That could happen if the
+                    # same suffix is found in the matched part of the pattern. In other words, if the mismatched character is to the left of the suffix in the pattern.
                     if (item['previousChar'] == text[s+j-1]) and (item['index'] < j):
                         return j - item['index']
                         foundCharMatch = True
@@ -262,11 +248,11 @@ class Heuristic2:
         s = 0
         pattern_length = len(pattern)
         text_length = len(text)
-        # do preprocessing
+        # Do the preprocessing
         shift, bpos = preprocess_strong_suffix(pattern, pattern_length)
         shift = preprocess_case2(shift, bpos, pattern, pattern_length)
 
-        #heuristic optimization
+        # Heuristic optimization
         
         charBeforeBorderLookup = preprocessingForHeuristic2(bpos,pattern)
         skipped_alignments = 0
@@ -282,22 +268,20 @@ class Heuristic2:
 
 
 class Heuristic1and2:
-    '''Search for a pattern in given text using 
-    Boyer Moore algorithm with Good suffix rule '''
-
+    
     def search(self, text, pattern, listOfSkippedAlignments):
         # s is shift of the pattern with respect to text
         s = 0
         pattern_length = len(pattern)
         text_length = len(text)
-        # do preprocessing for heuristic 1
+        # Do preprocessing for heuristic 1
         table = preprocessingForHeuristic1(pattern)
-        # end preprocessing for heuristic 1
-        # do preprocessing for heuristic 2
+        # End preprocessing for heuristic 1
+        # Do preprocessing for heuristic 2
         shift, bpos = preprocess_strong_suffix(pattern, pattern_length)
         shift = preprocess_case2(shift, bpos, pattern, pattern_length)
         charBeforeBorderLookup = preprocessingForHeuristic2(bpos,pattern)
-        #finished preprocessing for heuristic 2
+        # Finished preprocessing for heuristic 2
         heuristic1 = Heuristic1()
         heuristic2 = Heuristic2()
         skipped_alignments = 0
@@ -336,10 +320,8 @@ class BadCharacterAndGoodSuffixRuleHeuristic:
         while(j>=0 and pattern[j] == text[s+j]):
             j=j-1
         if(j<0):
-            #yield i
             foundList.append(s)
             return 1
-            #i = i + 1
         else:
             bad_char_pos = -1
             if(text[s+j] in table):
@@ -352,7 +334,7 @@ class BadCharacterAndGoodSuffixRuleHeuristic:
         pattern_length = len(pattern)
         text_length = len(text)
 
-        # do preprocessing
+        # Do preprocessing
         shift, bpos = preprocess_strong_suffix(pattern, pattern_length)
         shift = preprocess_case2(shift, bpos, pattern, pattern_length)
         bad_char_table = preprocess_bad_character(pattern)
@@ -403,8 +385,10 @@ def searchPattern(text, pattern, listOfSkippedAlignments):
 def showCharts(listOfSkippedAlignments):
     global pattern_names_label
     
-    x = np.arange(len(pattern_names_label))  # the label locations
-    width = 0.2  # the width of the bars
+    # The label locations
+    x = np.arange(len(pattern_names_label))
+    # The width of the bars
+    width = 0.2
 
     fig, ax = plt.subplots()
     rects1 = ax.bar(x, listOfSkippedAlignments["Heuristic1"], width, label='Heuristic1')
@@ -437,7 +421,6 @@ def showCharts(listOfSkippedAlignments):
     listOfSkippedAlignments["Heuristic 1 and 2"].clear()
     listOfSkippedAlignments["Boyer Moore"].clear()
 
-# save the pdf with name .pdf
 def searchGenomesFromFiles():
     global listOfSkippedAlignments
     global table_entries
@@ -463,7 +446,6 @@ def searchGenomesFromFiles():
                 tableFile.write(tableText)
         print("Searching in file: "+file+" finished! Time spent: ", time.time() - start)
         numFile += 1
-
 
 #searchGenomesFromFiles()
 UserTests.PerformTests()

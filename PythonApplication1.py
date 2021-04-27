@@ -57,20 +57,48 @@ def getSequencesFromFile(file):
             yield str(record.seq).upper()
 
 class UserTests:
+   class UserTests:
     @staticmethod
     def GetSequences():
         return {"AAAAAAAAAAAAAAAA",
-                "SFGATFGACGAAACGAGTAGCSFGATAGACGA",
+                "TFGACGAAACGAGTAGCSFGATAGACGA",
                 "CTATCGAAGTAGCCGATTAGC",
-                ""
+                "AAA"
+                "TCGATGCG",
+                "AACCAACCAC",
+                "ACACACACACACA",
+                "ACCAACCA",
+                "ACACCACCAACA",
+                "TCAGCGCGCTAGCGACTCGCTCAAGCATCGATCGACTGATCGGCCAACGCGAGCGACG",
+                "TCGCGCTAGCATCGATCGATCGTAGCA",
+                "AGCGCGAGCATAGCGCATACGTACG",
+                "TCGAGCTGCTAGCACGGCATGACTATCGCA",
+                "CAGGCTTAGCTGACTAT", 
+                "TGCATATCGATCTGAAAGCGCAGTGCATACGTCAG",
+                "GCATGACTGATCGCATGCTGAC"
             }
 
     @staticmethod
     def GetPatterns():
         return {
                 "CGA",
-                "SFGATAGACGA",
-                "AACCACCAC"
+                "GATAGACGA",
+                "AACCACCAC",
+                "CABADABA",
+                "ACTACTAC",
+                "GCTG",
+                "A",
+                "AA",
+                "ACA",
+                "ACCA",
+                "ACACA",
+                "CA",
+                "CCA",
+                "CTACTA",
+                "GAC",
+                "CAG",
+                "TCG",
+                "AGCT"
             }
 
     @staticmethod

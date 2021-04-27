@@ -14,6 +14,7 @@ from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 pattern_names_label = []
 numOfRecordsLen = 0
 table_entries = [['Text number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
+skipped_alignments_by_pattern = {"Heuristic1": 0, "Heuristic2" : 0, "Heuristic 1 and 2": 0, "Boyer Moore": 0}
 
 
 def populate_table_entries(listOfSkippedAlignments, pattern_names_label):
@@ -59,17 +60,44 @@ class UserTests:
     @staticmethod
     def GetSequences():
         return {"AAAAAAAAAAAAAAAA",
-                "SFGATFGACGAAACGAGTAGCSFGATAGACGA",
+                "TFGACGAAACGAGTAGCSFGATAGACGA",
                 "CTATCGAAGTAGCCGATTAGC",
-                ""
+                "AAA"
+                "TCGATGCG",
+                "AACCAACCAC",
+                "ACACACACACACA",
+                "ACCAACCA",
+                "ACACCACCAACA",
+                "TCAGCGCGCTAGCGACTCGCTCAAGCATCGATCGACTGATCGGCCAACGCGAGCGACG",
+                "TCGCGCTAGCATCGATCGATCGTAGCA",
+                "AGCGCGAGCATAGCGCATACGTACG",
+                "TCGAGCTGCTAGCACGGCATGACTATCGCA",
+                "CAGGCTTAGCTGACTAT", 
+                "TGCATATCGATCTGAAAGCGCAGTGCATACGTCAG",
+                "GCATGACTGATCGCATGCTGAC"
             }
 
     @staticmethod
     def GetPatterns():
         return {
                 "CGA",
-                "SFGATAGACGA",
-                "AACCACCAC"
+                "GATAGACGA",
+                "AACCACCAC",
+                "CABADABA",
+                "ACTACTAC",
+                "GCTG",
+                "A",
+                "AA",
+                "ACA",
+                "ACCA",
+                "ACACA",
+                "CA",
+                "CCA",
+                "CTACTA",
+                "GAC",
+                "CAG",
+                "TCG",
+                "AGCT"
             }
 
     @staticmethod
@@ -187,6 +215,7 @@ class Heuristic1:
                return j + 1
 
     def search(self, text, pattern, listOfSkippedAlignments):
+        global skipped_alignments_by_pattern
         table = preprocessingForHeuristic1(pattern)
         text_length = len(text)
         pattern_len = len(pattern)
@@ -200,7 +229,9 @@ class Heuristic1:
             skipped_alignments += 1
             i += shift
         skipped_alignments = len(text) - skipped_alignments
-        listOfSkippedAlignments["Heuristic1"].append(skipped_alignments)
+        #listOfSkippedAlignments["Heuristic1"].append(skipped_alignments)
+        skipped_alignments_by_pattern["Heuristic1"] += skipped_alignments
+
         #print("     Total skipped alignments by heuristic 1 is: " + str(skipped_alignments))
         return foundList
 
@@ -244,6 +275,7 @@ class Heuristic2:
                    return shift[0]
 
     def search(self, text, pattern, listOfSkippedAlignments):
+        global skipped_alignments_by_pattern
         # s is shift of the pattern with respect to text
         s = 0
         pattern_length = len(pattern)
@@ -262,7 +294,8 @@ class Heuristic2:
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
-        listOfSkippedAlignments["Heuristic2"].append(skipped_alignments)
+        #listOfSkippedAlignments["Heuristic2"].append(skipped_alignments)
+        skipped_alignments_by_pattern["Heuristic2"] += skipped_alignments
         #print("     Total skipped alignments by heuristic 2 is: " + str(skipped_alignments))
         return foundList
 
@@ -270,6 +303,7 @@ class Heuristic2:
 class Heuristic1and2:
     
     def search(self, text, pattern, listOfSkippedAlignments):
+        global skipped_alignments_by_pattern
         # s is shift of the pattern with respect to text
         s = 0
         pattern_length = len(pattern)
@@ -292,7 +326,8 @@ class Heuristic1and2:
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
-        listOfSkippedAlignments["Heuristic 1 and 2"].append(skipped_alignments)
+        #listOfSkippedAlignments["Heuristic 1 and 2"].append(skipped_alignments)
+        skipped_alignments_by_pattern["Heuristic 1 and 2"] += skipped_alignments
         #print("     Total skipped alignments by heuristic 1 and 2 is:  "+ str(skipped_alignments))
         return foundListSuffix
 
@@ -329,6 +364,7 @@ class BadCharacterAndGoodSuffixRuleHeuristic:
             return max(1, j-bad_char_pos)
 
     def search(self, text, pattern, listOfSkippedAlignments):
+        global skipped_alignments_by_pattern
         # s is shift of the pattern with respect to text
         s = 0
         pattern_length = len(pattern)
@@ -346,7 +382,8 @@ class BadCharacterAndGoodSuffixRuleHeuristic:
             skipped_alignments += 1
             s += shift_amount
         skipped_alignments = len(text) - skipped_alignments
-        listOfSkippedAlignments["Boyer Moore"].append(skipped_alignments)
+        #listOfSkippedAlignments["Boyer Moore"].append(skipped_alignments)
+        skipped_alignments_by_pattern["Boyer Moore"] += skipped_alignments
         #print("     Total skipped alignments by Boyer Moore full algorithm is: " + str(skipped_alignments))
         return foundListSuffix
 
@@ -426,9 +463,10 @@ def searchGenomesFromFiles():
     global table_entries
     global pattern_names_label
     global pdf
+    global skipped_alignments_by_pattern
     numFile = 0
-    listOfFiles = [r"chr1c.fna.gz", r"chrX.fna.gz", r"GCA_003957725.1_ASM395772v1_genomic.fna.gz" ]
-    fileNames = ["Coffea arabica chr 1C", "Mus pahari chr X", "Octopus vulgaris whole genome"]
+    listOfFiles = [r"chr1c.fna.gz", r"chrX.fna.gz", r"GCA_002588565.1_ASM258856v1_genomic.fna.gz" ]
+    fileNames = ["Coffea arabica chr 1C", "Mus pahari chr X", "Coelastrella genome"]
     listOfPatterns = [["ATGCATG", "TCTCTCTA", "TTCACTACTCTCA"], ["ATGATG", "CTCTCTA", "TCACTACTCTCA"], ["ACGATGAGCGTGCTCCGCA", "CTCGACTAACGCCTA", "TATCCGGCGACGTCGGT"]]
     for file in listOfFiles:
         start = time.time()
@@ -436,10 +474,15 @@ def searchGenomesFromFiles():
         listOfSkippedAlignments = {"Heuristic1": [], "Heuristic2": [], "Heuristic 1 and 2": [], "Boyer Moore": []}
         table_entries = [['Text number and pattern used', 'Number of skipped alignments', 'Heuristic name']]
         with PdfPages("plots_" + file + ".pdf") as pdf:
-            for seq in getSequencesFromFile(file):
-                for pattern in listOfPatterns[numFile]:
-                    pattern_names_label.append("Genome and chromosome :\n" + fileNames[numFile] + '\n' + "Pattern: " + pattern)
+            for pattern in listOfPatterns[numFile]:
+                pattern_names_label.append("Genome and chromosome :\n" + fileNames[numFile] + '\n' + "Pattern: " + pattern)
+                for seq in getSequencesFromFile(file):
                     searchPattern(seq, pattern, listOfSkippedAlignments)
+                listOfSkippedAlignments["Heuristic1"].append(skipped_alignments_by_pattern["Heuristic1"])
+                listOfSkippedAlignments["Heuristic2"].append(skipped_alignments_by_pattern["Heuristic2"])
+                listOfSkippedAlignments["Heuristic 1 and 2"].append(skipped_alignments_by_pattern["Heuristic 1 and 2"])
+                listOfSkippedAlignments["Boyer Moore"].append(skipped_alignments_by_pattern["Boyer Moore"])
+                skipped_alignments_by_pattern = {"Heuristic1": 0, "Heuristic2" : 0, "Heuristic 1 and 2": 0, "Boyer Moore": 0}
             showCharts(listOfSkippedAlignments)
             tableText = tabulate(table_entries, headers='firstrow', tablefmt='fancy_grid', showindex = True)
             with io.open(r"table_" + file + ".txt", 'w', encoding='utf-8') as tableFile:
@@ -447,5 +490,5 @@ def searchGenomesFromFiles():
         print("Searching in file: "+file+" finished! Time spent: ", time.time() - start)
         numFile += 1
 
-#searchGenomesFromFiles()
-UserTests.PerformTests()
+searchGenomesFromFiles()
+#UserTests.PerformTests()

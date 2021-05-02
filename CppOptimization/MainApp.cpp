@@ -18,7 +18,7 @@ protected:
     MatchList m_FoundList;
 
     virtual void PreProcess(const std::string& pattern) = 0;
-    virtual int GetNextShift(int s, const std::string& text, const std::string& pattern) = 0;
+    virtual unsigned GetNextShift(unsigned s, const std::string& text, const std::string& pattern) = 0;
 public:
     void search(const std::string& text, const std::string& pattern)
     {
@@ -37,14 +37,6 @@ public:
 
 };
 
-void preprocess_bad_character(const std::string& pattern, std::array<int, 256>& lastOccurence)
-{
-    for (unsigned i = 0; i < pattern.length(); ++i)
-    {
-        lastOccurence[pattern.at(i)] = i;
-    }
-}
-
 std::vector<std::vector<size_t>> preprocessingForHeuristic1(const std::string& pattern)
 {
     std::vector<std::vector<size_t>> table{ 256 };
@@ -55,6 +47,52 @@ std::vector<std::vector<size_t>> preprocessingForHeuristic1(const std::string& p
     }
 
     return table;
+}
+
+class Heuristic1_cpp: public Algorithm
+{
+    std::vector<std::vector<size_t>> m_Table;
+protected:
+    virtual void PreProcess(const std::string& pattern) override
+    {
+        m_Table = preprocessingForHeuristic1(pattern);
+    }
+    virtual unsigned GetNextShift(unsigned i, const std::string& text, const std::string& pattern)
+    {
+        int j = pattern.length() - 1;
+
+        while (j >= 0 and pattern[j] == text[i + j])
+            --j;
+
+        if (j < 0)
+        {
+            m_FoundList.emplace_back(i);
+            return 1;
+        }
+        else
+        {
+            if (m_Table[text[i + j]].size())
+            {
+                for (unsigned int cnt = 0; cnt < m_Table[text[i + j]].size(); ++cnt)
+                {
+                    const size_t& item = m_Table[text[i + j]].at(cnt);
+                    if (item < j)
+                    {
+                        return j - item;
+                    }
+                }
+            }
+            return j + 1;
+        }
+    }
+};
+
+void preprocess_bad_character(const std::string& pattern, std::array<int, 256>& lastOccurence)
+{
+    for (unsigned i = 0; i < pattern.length(); ++i)
+    {
+        lastOccurence[pattern.at(i)] = i;
+    }
 }
 
 
@@ -141,80 +179,44 @@ void preprocess_case2(std::vector<int>& shift, const std::vector<int>& bpos, con
     }
 }
 
-class Heuristic1_cpp
+class Heuristic2_cpp: public Algorithm
 {
+    std::vector<int> m_Shift;
+    std::vector<int> m_Bpos;
+
+    std::map<std::string, std::vector<PrevChar>> m_CharBeforeBorderLookup;
 public:
-    unsigned GetNextShift(unsigned i, const std::string& text, const std::string& pattern, const std::vector<std::vector<size_t>>& table, std::vector<size_t>& foundList)
+    // Inherited via Algorithm
+    virtual void PreProcess(const std::string& pattern) override
     {
-        int j = pattern.length() - 1;
+        preprocess_strong_suffix(pattern, m_Shift, m_Bpos);
+        preprocess_case2(m_Shift, m_Bpos, pattern);
 
-        while (j >= 0 and pattern[j] == text[i + j])
-            --j;
+        m_CharBeforeBorderLookup = preprocessingForHeuristic2(m_Bpos, pattern);
 
-        if (j < 0)
-        {
-            foundList.emplace_back(i);
-            return 1;
-        }
-        else
-        {
-            if (table[text[i + j]].size())
-            {
-                for (unsigned int cnt = 0; cnt < table[text[i + j]].size(); ++cnt)
-                {
-                    const size_t& item = table[text[i + j]].at(cnt);
-                    if (item < j)
-                    {
-                        return j - item;
-                    }
-                }
-            }
-            return j + 1;
-        }
     }
-
-    std::vector<size_t> search(const std::string& text, const std::string& pattern)
-    {
-        size_t i = 0, shift = 0;
-        std::vector<std::vector<size_t>> table = preprocessingForHeuristic1(pattern);
-        std::vector<size_t> foundList;
-
-        while (i <= text.length() - pattern.length())
-        {
-            shift = GetNextShift(i, text, pattern, table, foundList);
-            i += shift;
-        }
-
-        return foundList;
-    }
-
-};
-
-class Heuristic2_cpp
-{
-public:
-    unsigned GetNextShift(int s, const std::string& text, const std::string& pattern, const std::vector<int>& shift, const std::vector<int>& bpos, const std::map<std::string, std::vector<PrevChar>>& charBeforeBorderLookup, std::vector<size_t>& foundList)
+    virtual unsigned GetNextShift(unsigned s, const std::string& text, const std::string& pattern) override
     {
         int j = pattern.length() - 1;
         while (j >= 0 and pattern[j] == text[s + j])
             --j;
-        
+
         if (j < 0)
         {
-            foundList.emplace_back(s);
-            return shift[0];
+            m_FoundList.emplace_back(s);
+            return m_Shift[0];
         }
         else
         {
             bool foundCharMatch = false, foundHashLookup = false;
 
-            if (pattern.substr(bpos[j]).size())
+            if (pattern.substr(m_Bpos[j]).size())
             {
-                auto it = charBeforeBorderLookup.find(pattern.substr(bpos[j]));
-                if (it != charBeforeBorderLookup.end())
+                auto it = m_CharBeforeBorderLookup.find(pattern.substr(m_Bpos[j]));
+                if (it != m_CharBeforeBorderLookup.end())
                 {
                     const std::vector<PrevChar>& listOfPrevChar = it->second;
-                    
+
                     for (const PrevChar& item : listOfPrevChar)
                     {
                         if (item.previousChar == text[s + j - 1] && item.index < j)
@@ -228,11 +230,11 @@ public:
 
             if (!foundHashLookup)
             {
-                return shift[j + 1];
+                return m_Shift[j + 1];
             }
             else if (!foundCharMatch)
             {
-                return shift[0];
+                return m_Shift[0];
             }
             else
             {
@@ -241,28 +243,6 @@ public:
                 return 1;
             }
         }
-    }
-
-    std::vector<size_t> search(const std::string& text, const std::string& pattern)
-    {
-        int s = 0, shift_amount;
-        
-        std::vector<int> shift, bpos;
-        
-        std::vector<size_t> foundList;
-        
-        preprocess_strong_suffix(pattern, shift, bpos);
-        preprocess_case2(shift, bpos, pattern);
-
-        std::map<std::string, std::vector<PrevChar>> charBeforeBorderLookup = preprocessingForHeuristic2(bpos, pattern);
-
-        while (s <= text.length() - pattern.length())
-        {
-            shift_amount = GetNextShift(s, text, pattern, shift, bpos, charBeforeBorderLookup, foundList);
-            s += shift_amount;
-        }
-
-        return foundList;
     }
 };
 
@@ -287,17 +267,20 @@ public:
 
         while (s <= text.length() - pattern.length())
         {
-            shift_amount = std::max(heuristic2.GetNextShift(s, text, pattern, shift, bpos, charBeforeBorderLookup, foundListSuffix), heuristic1.GetNextShift(s, text, pattern, table, foundListCharacter));
+            shift_amount = 1; // std::max(heuristic2.GetNextShift(s, text, pattern, shift, bpos, charBeforeBorderLookup, foundListSuffix), heuristic1.GetNextShift(s, text, pattern));
             s += shift_amount;
         }
         return foundListSuffix;
     }
 };
 
-class BadCharacterAndGoodSuffixRuleHeuristic
+class BadCharacterAndGoodSuffixRuleHeuristic : public Algorithm
 {
-public:
-    unsigned GetNextShiftGoodSuffix(unsigned int s, const std::string& text, const std::string& pattern, const std::vector<int>& shift, const std::vector<int>& bpos, std::vector<int>& foundList)
+    std::vector<int> m_Shift;
+    std::vector<int> m_Bpos;
+    std::array<int, 256> m_LastOccurence;
+    
+    unsigned GetNextShiftGoodSuffix(unsigned int s, const std::string& text, const std::string& pattern)
     {
         int j = pattern.length() - 1;
         while (j >= 0 && pattern[j] == text[s + j])
@@ -307,17 +290,16 @@ public:
 
         if (j < 0)
         {
-            foundList.push_back(s);
-            return shift[0];
+            m_FoundList.push_back(s);
+            return m_Shift[0];
         }
         else
         {
-            return shift[j + 1];
+            return m_Shift[j + 1];
         }
     }
-
-
-    unsigned GetNextShiftBadChar(unsigned int s, const std::string& text, const std::string& pattern, const std::array<int, 256>& lastOccurence, std::vector<int>& foundList)
+    
+    unsigned GetNextShiftBadChar(unsigned int s, const std::string& text, const std::string& pattern)
     {
         int j = pattern.length() - 1;
         while (j >= 0 and pattern[j] == text[s + j])
@@ -327,39 +309,32 @@ public:
 
         if (j < 0)
         {
-            foundList.push_back(s);
+            //foundList.push_back(s);
         }
         else
         {
-            if (lastOccurence[text[s + j]] != -1)
+            if (m_LastOccurence[text[s + j]] != -1)
             {
-                return std::max(1, j - lastOccurence[text[s + j]]);
+                return std::max(1, j - m_LastOccurence[text[s + j]]);
             }
         }   
         return 1;
     }
 
-    std::vector<int> search(const std::string& text, const std::string& pattern)
+public:
+    // Inherited via Algorithm
+    virtual void PreProcess(const std::string& pattern) override
     {
-        unsigned s = 0, shift_amount = 0;
-        std::vector<int> foundListSuffix, foundListCharacter;
+        std::fill(m_LastOccurence.begin(), m_LastOccurence.end(), -1);
 
-        std::vector<int> shift, bpos;
+        preprocess_strong_suffix(pattern, m_Shift, m_Bpos);
+        preprocess_case2(m_Shift, m_Bpos, pattern);
+        preprocess_bad_character(pattern, m_LastOccurence);
+    }
 
-        std::array<int, 256> lastOccurence;
-        std::fill(lastOccurence.begin(), lastOccurence.end(), -1);
-
-        preprocess_strong_suffix(pattern, shift, bpos);
-        preprocess_case2(shift, bpos, pattern);
-        preprocess_bad_character(pattern, lastOccurence);
-
-        while (s <= text.length() - pattern.length())
-        {
-            shift_amount = std::max(GetNextShiftGoodSuffix(s, text, pattern, shift, bpos, foundListSuffix), GetNextShiftBadChar(s, text, pattern, lastOccurence, foundListCharacter));
-            s += shift_amount;
-        }
-
-        return foundListCharacter;
+    virtual unsigned GetNextShift(unsigned s, const std::string& text, const std::string& pattern) override
+    {
+        return std::max(GetNextShiftGoodSuffix(s, text, pattern), GetNextShiftBadChar(s, text, pattern));
     }
 };
 
@@ -367,14 +342,17 @@ public:
 PYBIND11_MODULE(CppOptimization, m) {
     py::class_<Heuristic1_cpp>(m, "Heur1")
         .def(py::init<>())
-        .def("search", &Heuristic1_cpp::search);
+        .def("search", &Heuristic1_cpp::search)
+        .def("getMatches", &Heuristic1_cpp::GetMatches);
     py::class_<Heuristic2_cpp>(m, "Heur2")
         .def(py::init<>())
-        .def("search", &Heuristic2_cpp::search);
+        .def("search", &Heuristic2_cpp::search)
+        .def("getMatches", &Heuristic2_cpp::GetMatches);
     py::class_<Heuristic1and2_cpp>(m, "Heur12")
         .def(py::init<>())
         .def("search", &Heuristic1and2_cpp::search);
     py::class_<BadCharacterAndGoodSuffixRuleHeuristic>(m, "HeurNative")
         .def(py::init<>())
-        .def("search", &BadCharacterAndGoodSuffixRuleHeuristic::search);
+        .def("search", &BadCharacterAndGoodSuffixRuleHeuristic::search)
+        .def("getMatches", &BadCharacterAndGoodSuffixRuleHeuristic::GetMatches);
 }

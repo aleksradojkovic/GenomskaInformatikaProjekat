@@ -51,6 +51,7 @@ std::vector<std::vector<size_t>> preprocessingForHeuristic1(const std::string& p
 
 class Heuristic1_cpp: public Algorithm
 {
+    friend class Heuristic1and2_cpp;
     std::vector<std::vector<size_t>> m_Table;
 protected:
     virtual void PreProcess(const std::string& pattern) override
@@ -181,6 +182,8 @@ void preprocess_case2(std::vector<int>& shift, const std::vector<int>& bpos, con
 
 class Heuristic2_cpp: public Algorithm
 {
+    friend class Heuristic1and2_cpp;
+
     std::vector<int> m_Shift;
     std::vector<int> m_Bpos;
 
@@ -246,32 +249,24 @@ public:
     }
 };
 
-class Heuristic1and2_cpp
+class Heuristic1and2_cpp : public Algorithm
 {
+    Heuristic1_cpp hr1;
+    Heuristic2_cpp hr2;
 public:
-    std::vector<size_t> search(const std::string& text, const std::string& pattern)
+    virtual void PreProcess(const std::string& pattern) override
     {
-        int s = 0, shift_amount = 0;
-        std::vector<std::vector<size_t>> table = preprocessingForHeuristic1(pattern);
-        std::vector<size_t> foundListSuffix, foundListCharacter;
-
-        std::vector<int> shift, bpos;
-
-        preprocess_strong_suffix(pattern, shift, bpos);
-        preprocess_case2(shift, bpos, pattern);
-
-        std::map<std::string, std::vector<PrevChar>> charBeforeBorderLookup = preprocessingForHeuristic2(bpos, pattern);
-
-        Heuristic1_cpp heuristic1 = Heuristic1_cpp();
-        Heuristic2_cpp heuristic2 = Heuristic2_cpp();
-
-        while (s <= text.length() - pattern.length())
-        {
-            shift_amount = 1; // std::max(heuristic2.GetNextShift(s, text, pattern, shift, bpos, charBeforeBorderLookup, foundListSuffix), heuristic1.GetNextShift(s, text, pattern));
-            s += shift_amount;
-        }
-        return foundListSuffix;
+        hr1.PreProcess(pattern);
+        hr2.PreProcess(pattern);
     }
+    
+    virtual unsigned GetNextShift(unsigned s, const std::string& text, const std::string& pattern)
+    {
+        return std::max(hr1.GetNextShift(s, text, pattern), hr2.GetNextShift(s, text, pattern));
+    }
+
+    const MatchList& GetMatches() const { return hr1.GetMatches(); }
+    
 };
 
 class BadCharacterAndGoodSuffixRuleHeuristic : public Algorithm
@@ -350,7 +345,8 @@ PYBIND11_MODULE(CppOptimization, m) {
         .def("getMatches", &Heuristic2_cpp::GetMatches);
     py::class_<Heuristic1and2_cpp>(m, "Heur12")
         .def(py::init<>())
-        .def("search", &Heuristic1and2_cpp::search);
+        .def("search", &Heuristic1and2_cpp::search)
+        .def("getMatches", &Heuristic1and2_cpp::GetMatches);
     py::class_<BadCharacterAndGoodSuffixRuleHeuristic>(m, "HeurNative")
         .def(py::init<>())
         .def("search", &BadCharacterAndGoodSuffixRuleHeuristic::search)

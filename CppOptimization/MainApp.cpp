@@ -11,7 +11,6 @@ namespace py = pybind11;
 
 using MatchList = std::vector<unsigned>;
 
-
 class Algorithm
 {
 protected:
@@ -22,6 +21,7 @@ protected:
 public:
     void search(const std::string& text, const std::string& pattern)
     {
+        std::cout << "Searching started!" << std::endl;
         int s = 0, shift_amount;
         
         PreProcess(pattern);
@@ -62,7 +62,7 @@ protected:
     {
         int j = pattern.length() - 1;
 
-        while (j >= 0 and pattern[j] == text[i + j])
+        while (j >= 0 && pattern[j] == text[i + j])
             --j;
 
         if (j < 0)
@@ -201,7 +201,7 @@ public:
     virtual unsigned GetNextShift(unsigned s, const std::string& text, const std::string& pattern) override
     {
         int j = pattern.length() - 1;
-        while (j >= 0 and pattern[j] == text[s + j])
+        while (j >= 0 && pattern[j] == text[s + j])
             --j;
 
         if (j < 0)
@@ -297,7 +297,7 @@ class BadCharacterAndGoodSuffixRuleHeuristic : public Algorithm
     unsigned GetNextShiftBadChar(unsigned int s, const std::string& text, const std::string& pattern)
     {
         int j = pattern.length() - 1;
-        while (j >= 0 and pattern[j] == text[s + j])
+        while (j >= 0 && pattern[j] == text[s + j])
         {
             --j;
         }
